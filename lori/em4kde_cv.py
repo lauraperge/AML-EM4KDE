@@ -10,7 +10,7 @@ attributeNames = [name[0] for name in mat_data['attributeNames'].squeeze()]
 N, D = X.shape
 
 # K-fold crossvalidation
-K = 10
+K = 3
 CV = model_selection.KFold(n_splits=K, shuffle=True)
 
 max_iter = 10
@@ -72,12 +72,17 @@ for train_index, test_index in CV.split(X):
             for j, train in enumerate(X_train):
                 L_sub += mixing_coeff[j] * \
                     multivariate_normal.pdf(
-                        test, mean=train, cov=Sigma[j])
+                        test, mean=train, cov=avg_sigma_train)
             L += np.log(L_sub)
         log_likelihood[iteration] = L
-    print(log_likelihood)
+    # print(log_likelihood)
     Sigma_CVs.append(Sigma[0])
 
     k += 1
 
 print(Sigma_CVs)
+result_sigma = np.zeros(shape=(D, D))
+for cv_fold in range(K):
+    result_sigma += Sigma_CVs[cv_fold]
+result_sigma /= K  # D x D
+print(result_sigma)
