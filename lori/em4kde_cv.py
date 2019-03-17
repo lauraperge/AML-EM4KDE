@@ -80,9 +80,13 @@ for train_index, test_index in CV.split(X):
 
     k += 1
 
+# the result of each CV fold stored in a list, it's a DxD covariance matrix obtained by performing EM algorithm 10 times
 print(Sigma_CVs)
+
 result_sigma = np.zeros(shape=(D, D))
 for cv_fold in range(K):
     result_sigma += Sigma_CVs[cv_fold]
 result_sigma /= K  # D x D
+
+# the avg of the resulted Sigmas from CV folds
 print(result_sigma)
