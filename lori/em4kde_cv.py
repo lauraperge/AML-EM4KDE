@@ -1,7 +1,17 @@
 from scipy.io import loadmat
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import multivariate_normal
 from sklearn import model_selection
+
+## Helper function for plotting a 2D Gaussian
+def plot_normal(mu, Sigma):
+    l, V = np.linalg.eigh(Sigma)
+    l[l < 0] = 0
+    t = np.linspace(0.0, 2.0 * np.pi, 100)
+    xy = np.stack((np.cos(t), np.sin(t)))
+    Txy = mu + ((V * np.sqrt(l)).dot(xy)).T
+    plt.plot(Txy[:, 0], Txy[:, 1])
 
 # Load Matlab data file and extract variables of interest
 mat_data = loadmat('./faithful.mat')
@@ -90,3 +100,12 @@ result_sigma /= K  # D x D
 
 # the avg of the resulted Sigmas from CV folds
 print(result_sigma)
+
+## Plot data
+plt.figure(2)
+plt.plot(X[:, 0], X[:, 1], '.')
+for _data in X:
+    # print(_data)
+    # print(sigma)
+    plot_normal(_data, result_sigma)
+plt.show()
