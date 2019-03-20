@@ -20,10 +20,10 @@ attributeNames = [name[0] for name in mat_data['attributeNames'].squeeze()]
 N, D = X.shape
 
 # K-fold crossvalidation
-K = 3
+K = 10
 CV = model_selection.KFold(n_splits=K, shuffle=True)
 
-max_iter = 10
+max_iter = 30
 Sigma_CVs = []
 
 k = 0
@@ -38,42 +38,42 @@ for train_index, test_index in CV.split(X):
     train_size = len(X_train)
     test_size = len(X_test)
     # 1 x X_train, each element is 2x2 matrix
-    Sigma = [np.eye(D) for _ in range(train_size)]
+    Sigma = [np.eye(D) for _ in range(test_size)]
     mixing_coeff = (1.0 / train_size) * np.ones(train_size)  # 1 x X_train
     responsibility = np.zeros(
-        shape=(test_size, train_size))  # X_test x X_train
+        shape=(train_size, test_size))  # X_test x X_train
     log_likelihood = np.zeros(max_iter)  # 1 x iteration
 
     for iteration in range(max_iter):
 
         # E step
-        for i, test in enumerate(X_test):
-            resp_i = np.zeros(train_size)
-            for j, train in enumerate(X_train):
-                resp_i[j] = multivariate_normal.pdf(
-                    test, mean=train, cov=Sigma[j])
+        for j, train in enumerate(X_train):
+            resp_i = np.zeros(test_size)
+            for i, test in enumerate(X_test):
+                resp_i[i] = multivariate_normal.pdf(
+                    test, mean=train, cov=Sigma[i])
             resp_i /= np.sum(resp_i, axis=0)
-            responsibility[i, :] = resp_i[:]
+            responsibility[j, :] = resp_i[:]
 
         # M step
-        sigma_train = []  # X_train sized list, each element is DxD
-        for j, train in enumerate(X_train):
-            sum_sigma_test = np.zeros(shape=(D, D))
-            for i, test in enumerate(X_test):
+        sigma_test = []  # X_train sized list, each element is DxD
+        for i, test in enumerate(X_test):
+            sum_sigma_train = np.zeros(shape=(D, D))
+            for j, train in enumerate(X_train):
                 delta = test - train
                 delta = np.matrix(delta)
-                sum_sigma_test += (responsibility[i, j] * delta.T).dot(delta)
-            sigma_train.append(sum_sigma_test)
+                sum_sigma_train += (responsibility[j, i] * delta.T).dot(delta)
+            sigma_test.append(sum_sigma_train)
 
         # Avg of Sigma created for each train point
-        sum_sigma_train = np.zeros(shape=(D, D))
-        for j, train in enumerate(X_train):
-            sum_sigma_train += sigma_train[j]
-        avg_sigma_train = sum_sigma_train / len(X_train)  # D x D
+        sum_sigma_test = np.zeros(shape=(D, D))
+        for i, test in enumerate(X_test):
+            sum_sigma_test += sigma_test[i]
+        avg_sigma_test = sum_sigma_test / len(X_test)  # D x D
 
         # Update sigmas
-        for j, train in enumerate(X_train):
-            Sigma[j] = avg_sigma_train
+        for i, test in enumerate(X_test):
+            Sigma[i] = avg_sigma_test
 
         # calculate loglikelihood
         L = 0
@@ -82,7 +82,7 @@ for train_index, test_index in CV.split(X):
             for j, train in enumerate(X_train):
                 L_sub += mixing_coeff[j] * \
                     multivariate_normal.pdf(
-                        test, mean=train, cov=avg_sigma_train)
+                        test, mean=train, cov=avg_sigma_test)
             L += np.log(L_sub)
         log_likelihood[iteration] = L
     # print(log_likelihood)
