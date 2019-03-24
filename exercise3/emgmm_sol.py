@@ -14,63 +14,72 @@ def plot_normal(mu, Sigma):
     plt.plot(Txy[:, 0], Txy[:, 1])
 
 
-## Load data
-# data = loadmat('../lori/faithful.mat')['X']
-data = loadmat('clusterdata2d.mat')['data']
+def e_step(x_test, x_train, sigma):
+    num_test, num_train = len(x_test), len(x_train)
+    pi = 1.0 / num_train
+    responsibility = np.zeros([num_train])
+    for k, train in enumerate(x_train):
+        responsibility[k] = pi * multivariate_normal.pdf(x_test, mean=train, cov=sigma)
+    responsibility /= np.sum(responsibility, axis=0)
 
-data = data[:200]  # taking only a small part for testing
+    return responsibility
+
+
+def m_step(x_test, x_train, responsibility):
+    num_test, num_train = len(x_test), len(x_train)
+
+    sigmas = np.zeros([num_train, dim, dim])
+
+    for k, train in enumerate(x_train):
+        delta = (x_test - train)[np.newaxis]
+        sigmas[k] = (responsibility[k] * delta.T).dot(delta)
+    return sigmas
+
+
+## Load data
+data = loadmat('../faithfull/faithful.mat')['X']
+
+data = data[:100]  # taking only a small part for testing
 
 num_data, dim = data.shape
 
 ## Loop until you're happy
-max_iter = 30  # XXX: you should find a better convergence check than a max iteration counter
-sigmas = np.asarray([np.eye(dim) for _ in range(num_data)])
+epsilon = 1e-4
+sigma = np.eye(dim)
+log_likelihood = np.asarray([])
+i = 0
+while True:
+    i += 1
+    sigmas = np.zeros([num_data, num_data - 1, dim, dim])
+    for idx, x_test in enumerate(data):
+        # x_test = np.asarray([x_test])
+        x_train = np.concatenate((data[:idx], data[idx + 1:]), axis=0)
 
-for idx, test in enumerate(data):
-    if idx == 0:
-        train_array = data[1:]
-    if idx == num_data:
-        train_array = data[:-1]
-    if 0 < idx < num_data:
-        train_array = np.concatenate((data[:idx], data[idx + 1:]), axis=0)  # removing the current element
+        # E step
+        responsibility = e_step(x_test, x_train, sigma)
+        # M step
+        sigmas[idx] = m_step(x_test, x_train, responsibility)
 
-    num_train = train_array.shape[0]
-
-    _sigmas = np.asarray([np.eye(dim) for _ in range(num_train)])
-    pi = (1.0 / num_train) * np.ones(num_train)  # same pi for each distribution
-    responsibility = np.zeros(num_train)
-    log_likelihood = np.zeros(max_iter)
-
-    for iteration in range(max_iter):
-        ## Compute responsibilities
-        for k, train in enumerate(train_array):
-            responsibility[k] = pi[k] * multivariate_normal.pdf(test, mean=train, cov=_sigmas.sum(axis=0))
-        responsibility /= np.sum(responsibility, axis=0)
-
-        ## Update parameters
-        for k, train in enumerate(train_array):
-            responsibility_k = responsibility[k]  # num_train
-            Nk = np.sum(responsibility_k)  # scalar
-            # mu[k] = responsibility_k.dot(test) / Nk  # dim
-            delta = (test - train)[np.newaxis]  # NxD
-            _sigmas[k] = (responsibility_k * delta.T).dot(delta)  # / Nk  # dim x dim
-            # pi[k] = Nk / num_train
-
-        ## Compute log-likelihood of data
-        # log_likelihood[iteration] = -1 # XXX: DO THIS CORRECTLY
+    _log_likelihood = np.zeros(num_data)
+    pi = 1.0 / (num_data - 1)
+    for idx, x_test in enumerate(data):
+        # x_test = np.asarray([x_test])
+        x_train = np.concatenate((data[:idx], data[idx + 1:]), axis=0)
         L = 0
-        # print(np.linalg.det(_sigmas.sum(axis=0)))
-        for k, train in enumerate(train_array):
-            L += pi[k] * multivariate_normal.pdf(test, mean=train, cov=_sigmas.sum(axis=0))
-        log_likelihood[iteration] = np.sum(np.log(L))
-        print(log_likelihood[iteration])
-    sigmas[idx] = _sigmas.sum(axis=0)
-    print('Run {}/{}'.format(idx + 1, num_data))
-    print(sigmas[idx])
+        for train in x_train:
+            L += pi * multivariate_normal.pdf(x_test, mean=train, cov=sigma)
+        _log_likelihood[idx] = np.sum(np.log(L))
+    log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
 
-sigma = sigmas.mean(axis=0)
+    sigma = sigmas.sum(axis=1).sum(axis=0) / num_data
+    if i > 1:
+        change = 1. - log_likelihood[-1] / log_likelihood[-2]
+        print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
+        if change < epsilon:
+            break
+    else:
+        print('Run {}, log likelihood: {}'.format(i, log_likelihood[-1]))
 
-## Plot log-likelihood -- did we converge?
 plt.figure(1)
 plt.plot(log_likelihood)
 plt.xlabel('Iterations')
@@ -84,8 +93,6 @@ if dim == 3:
     plt.plot3(data[:, 0], data[:, 1], data[:, 2], '.')
 
 for _data in data:
-    print(_data)
-    print(sigma)
     plot_normal(_data, sigma)
 
 plt.show()
