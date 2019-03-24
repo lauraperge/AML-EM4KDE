@@ -56,8 +56,7 @@ def custom_normal_pdf(a, mean, cov_lower_triangle):
             Probability density function evaluated at `a` 
  
     """
-    dim = len(mean)
-    
+    dim = mean.shape[1]
     PI2R = np.power(2*np.pi, dim/2) * np.prod(np.diagonal(cov_lower_triangle))
 
     if len(a)>1:
@@ -66,8 +65,7 @@ def custom_normal_pdf(a, mean, cov_lower_triangle):
     else:
         pdf = np.exp(-np.log(PI2R) - 0.5 * (np.sum(np.power(a, 2)) - 2 *
                                             a.dot(mean.T) + np.sum(np.power(mean, 2))))
-    
-    return(pdf)
+    return pdf
 
 
 ########### try
@@ -76,30 +74,34 @@ data = loadmat('../faithfull/faithful.mat')['X']
 data = data[:20]  # taking only a small part for testing
 
 num_data, dim = data.shape
-sigma = np.matrix([[1.2, 2.3], [-0.1, 0.2]])
+sigma = np.matrix([[1.2, 0.1], [0.1, 10.2]])
 r = np.linalg.cholesky(sigma)
+r = r.T
+# print(r)
+# print(sigma, np.dot(r.T,r), np.dot(r,r.T))
 
 A = data.dot(np.linalg.inv(r))
 
-print(A.shape, data.shape)
+x_test = data[:3]
+x_train = data[4:]
 
-x_test = data[:2]
-x_train = data[3:]
-
-a_test = A[:2]
-a_train = A[3:]
+a_test = A[:3]
+a_train = A[4:]
 
 scipy_norm = []
 custom_norm = []
 for train in a_train:
+    # print("x_test, x_train: \t", a_test.dot(r), train.dot(r))
     custom_norm.append(custom_normal_pdf(a = a_test, mean = train, cov_lower_triangle = r))
 
+print("-----------------------")
 for train in x_train:
+    # print("scipy_normal_pdf: \t ",x_test,train)
     scipy_norm.append(multivariate_normal.pdf(x = x_test, mean = train, cov = sigma))
 
-# print('cust :  {}; scipy:  {}'.format(custom_norm, scipy_norm))
+# print('cust :  {}; \n scipy:  {}'.format(custom_norm, scipy_norm))
 
-diff = np.array(np.array(custom_norm).reshape((17,2)) - np.array(scipy_norm))
+diff = np.array(np.array(custom_norm).reshape((16,3)) - np.array(scipy_norm))
 coord = [i for i in range(len(a_train))]
 
 plt.plot(coord, diff[:, 1])
