@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.stats import multivariate_normal
+from lori.plot import plot_kde
+
 
 ## Helper function for plotting a 2D Gaussian
 def plot_normal(mu, Sigma):
@@ -84,14 +86,7 @@ plt.plot(log_likelihood)
 plt.xlabel('Iterations')
 plt.ylabel('Log-likelihood')
 
-## Plot data
 plt.figure(2)
-if dim == 2:
-    plt.plot(data[:, 0], data[:, 1], '.')
-if dim == 3:
-    plt.plot3(data[:, 0], data[:, 1], data[:, 2], '.')
-
-for _data in data:
-    plot_normal(_data, sigma)
-
-plt.show()
+## Plot data
+print('hey')
+plot_kde(data, sigma, 0.1)

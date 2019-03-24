@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from scipy.stats import multivariate_normal
 
 # custom
-from utils import plot_normal, e_step, m_step
+from EM_KDE_optimized.utils import plot_normal, e_step, m_step
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
@@ -28,7 +28,7 @@ while True:
         # E step
         responsibility = e_step(x_test, x_train, sigma)
         # M step
-        sigmas[idx] = m_step(x_test, x_train, responsibility,dim)
+        sigmas[idx] = m_step(x_test, x_train, responsibility, dim)
 
     _log_likelihood = np.zeros(num_data)
     pi = 1.0 / (num_data - 1)

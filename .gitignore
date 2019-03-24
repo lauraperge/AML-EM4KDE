@@ -3,3 +3,5 @@
 \.idea/
 
 exercise3/test\.py
+
+lori/__pycache__/
