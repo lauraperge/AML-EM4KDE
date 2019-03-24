@@ -39,12 +39,12 @@ def m_step(x_test, x_train, responsibility):
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
 
-data = data[:50]  # taking only a small part for testing
+data = data[:100]  # taking only a small part for testing
 
 num_data, dim = data.shape
 
 ## Loop until you're happy
-epsilon = 0.01  # XXX: you should find a better convergence check than a max iteration counter
+epsilon = 1e-4
 sigma = np.eye(dim)
 log_likelihood = np.asarray([])
 i = 0
@@ -72,12 +72,14 @@ while True:
     log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
 
     sigma = sigmas.sum(axis=1).sum(axis=0) / num_data
-    print('Run {}, log likelihood: {}'.format(i, log_likelihood[-1]))
+    if i > 1:
+        change = 1. - log_likelihood[-1] / log_likelihood[-2]
+        print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
+        if change < epsilon:
+            break
+    else:
+        print('Run {}, log likelihood: {}'.format(i, log_likelihood[-1]))
 
-    if i > 50:  # and log_likelihood[-1] / log_likelihood[-2] > epsilon:
-        break
-
-## Plot log-likelihood -- did we converge?
 plt.figure(1)
 plt.plot(log_likelihood)
 plt.xlabel('Iterations')
