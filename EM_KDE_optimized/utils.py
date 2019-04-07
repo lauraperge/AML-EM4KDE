@@ -14,29 +14,73 @@ def plot_normal(mu, Sigma):
     plt.plot(Txy[:, 0], Txy[:, 1])
 
 
-## E-step of the EM algorithm
 def e_step(a_test, a_train, R):
     num_test, num_train = len(a_test), len(a_train)
+
+    responsibility = np.zeros([num_train, num_test])
     pi = 1.0 / num_train
-    responsibility = np.zeros([num_train])
+
     for k, train in enumerate(a_train):
-        responsibility[k] = pi * \
-                            custom_normal_pdf(a_test, mean=train, R=R)
+        for j, test in enumerate(a_test):
+            responsibility[k, j] = pi * custom_normal_pdf(test, mean=train, R=R)
     responsibility /= np.sum(responsibility, axis=0)
 
     return responsibility
 
 
-## M-step of the EM-algorithm
+# def e_step(x_test, x_train, sigma):
+#     num_test, num_train = len(x_test), len(x_train)
+#
+#     responsibility = np.zeros([num_train, num_test])
+#     for k, train in enumerate(x_train):
+#         responsibility[k] = multivariate_normal.pdf(x_test, mean=train, cov=sigma)
+#     responsibility /= np.sum(responsibility, axis=0)
+#
+#     return responsibility
+
+
 def m_step(x_test, x_train, responsibility, dim):
     num_test, num_train = len(x_test), len(x_train)
 
     sigmas = np.zeros([num_train, dim, dim])
 
     for k, train in enumerate(x_train):
-        delta = (x_test - train)[np.newaxis]
-        sigmas[k] = (responsibility[k] * delta.T).dot(delta)
+        _sigmas = np.zeros([num_test, dim, dim])
+        for n, test in enumerate(x_test):
+            delta = (test - train)[np.newaxis]
+            _sigmas[n] = (responsibility[k, n] * delta.T).dot(delta)
+        sigmas[k] = _sigmas.mean(axis=0)
     return sigmas
+
+
+def calculate_log_likelihood(x_test, x_train, R):
+    num_test, num_train = len(x_test), len(x_train)
+
+    L = np.zeros([num_test, num_train])
+    pi = 1.0 / num_train
+    for j, test in enumerate(x_test):
+        for k, train in enumerate(x_train):
+            L[j, k] = pi * custom_normal_pdf(test, mean=train, R=R)
+            # L[j, k] = pi * multivariate_normal.pdf(test, mean=train, cov=R)
+    return L.sum()
+
+
+def is_converged(log_likelihood, epsilon):
+    i = len(log_likelihood)
+    if i > 1:
+        change = log_likelihood[-1] / log_likelihood[-2] - 1.
+        print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
+
+        if log_likelihood[-1] < log_likelihood[-2]:
+            print('Error: Log likelihood decreases.')
+            return True
+
+        if change < epsilon:
+            print('Finished.')
+            return True
+    else:
+        print('Run {}, log likelihood: {}'.format(i, log_likelihood[-1]))
+        return False
 
 
 def pdf(x, mean, sigma):

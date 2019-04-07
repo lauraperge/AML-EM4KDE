@@ -39,22 +39,11 @@ while True:
 
     sigma = sigmas.sum(axis=1).mean(axis=0)
 
-    R = np.linalg.cholesky(sigma)
-    A = data.dot(np.linalg.inv(R).T)
 
-    _log_likelihood = np.zeros(num_data)
-    pi = 1.0 / (num_data - 1)
-    for idx, x_test in enumerate(A):
-        x_train = np.concatenate((A[:idx], A[idx + 1:]), axis=0)
-        L = 0
-        for train in x_train:
-            L += pi * custom_normal_pdf(x_test, mean=train, R=R)
-        _log_likelihood[idx] = np.sum(np.log(L))
-    log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
 
     # sigma = sigmas.sum(axis=1).mean(axis=0)
     if i > 1:
-        change = 1. - log_likelihood[-1] / log_likelihood[-2]
+        change = (log_likelihood[-1] / log_likelihood[-2]) - 1.
         print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
         if change < epsilon:
             break

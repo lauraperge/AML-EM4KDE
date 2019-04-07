@@ -4,7 +4,8 @@ from scipy.io import loadmat
 from scipy.stats import multivariate_normal
 from sklearn import model_selection
 
-from utils import plot_normal, e_step, m_step
+from EM_KDE_no_optimization.utils import e_step, m_step
+from lori.plot import plot_kde
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
@@ -16,54 +17,58 @@ num_data, dim = data.shape
 # K-fold crossvalidation
 K = 10
 CV = model_selection.KFold(n_splits=K, shuffle=False)
-CV_Split = CV.split(data)
 
 ## Loop until you're happy
-epsilon = 1e-4
+epsilon = 1e-3
 sigma = np.eye(dim)
 log_likelihood = np.asarray([])
 i = 0
 while True:
     i += 1
     sigmas = []
-    # for idx, x_test in enumerate(data): 
-    for train_index, test_index in CV_Split:
+
+    for train_index, test_index in CV.split(data):
         # extract training and test set for current CV fold
         x_train = data[train_index, :]
         x_test = data[test_index, :]
 
         # E step
         responsibility = e_step(x_test, x_train, sigma)
-        # print(responsibility.shape)
-        
+
         # M step
         sigmas.append(m_step(x_test, x_train, responsibility, dim))
-        
-    #sigmas = np.asarray(sigmas).reshape([K, -1, dim, dim])
-    sigmas = np.array(sigmas).reshape((K, -1, dim, dim))
-    # sum according to num_train, sum according to fold, but note doesnt say to divide by K
-    sigma = sigmas.sum(axis=1).sum(axis=0)  # / K
 
+    sigmas = np.array(sigmas)
+
+    # sum according to num_train, sum according to fold, but note doesnt say to divide by K
+    sigma = sigmas.sum(axis=1).mean(axis=0)
+
+    # calculate log likelihood
     _log_likelihood = np.zeros(K)
     idx = 0
-    print('hey')
-    for train_index, test_index in CV_Split:
+    for train_index, test_index in CV.split(data):
         # extract training and test set for current CV fold
         x_train = data[train_index, :]
         x_test = data[test_index, :]
-        print('ho')
-        L = 0
-        for train in x_train:
-            for test in x_test:
-                print('go')
-                L += multivariate_normal.pdf(test, mean=train, cov=sigma)
-        _log_likelihood[idx] = np.sum(np.log(L))
+
+        num_test, num_train = len(x_test), len(x_train)
+
+        L = np.zeros([num_test, num_train])
+        pi = 1.0 / num_train
+        for j, test in enumerate(x_test):
+            for k, train in enumerate(x_train):
+                L[j, k] = pi * multivariate_normal.pdf(test, mean=train, cov=sigma)
+        _log_likelihood[idx] = L.sum()
+
         idx += 1
-    #print(_log_likelihood)
-    log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
-    
+    log_likelihood = np.append(log_likelihood, _log_likelihood.mean())
+
     if i > 1:
-        change = 1. - log_likelihood[-1] / log_likelihood[-2]
+        if log_likelihood[-1] < log_likelihood[-2]:
+            print('Error: Log likelihood decreases.')
+            break
+
+        change = log_likelihood[-1] / log_likelihood[-2] - 1.
         print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
         if change < epsilon:
             break
@@ -74,15 +79,6 @@ plt.figure(1)
 plt.plot(log_likelihood)
 plt.xlabel('Iterations')
 plt.ylabel('Log-likelihood')
-
-## Plot data
-plt.figure(2)
-if dim == 2:
-    plt.plot(data[:, 0], data[:, 1], '.')
-if dim == 3:
-    plt.plot3(data[:, 0], data[:, 1], data[:, 2], '.')
-
-for _data in data:
-    plot_normal(_data, sigma)
-
 plt.show()
+
+plot_kde(data, sigma, 0.1)
