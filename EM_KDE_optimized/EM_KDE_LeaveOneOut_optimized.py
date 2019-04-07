@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from scipy.stats import multivariate_normal
 
 from lori.plot import plot_kde
-from EM_KDE_optimized.utils import e_step, m_step
+from EM_KDE_optimized.utils import custom_normal_pdf, e_step, m_step
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
@@ -39,13 +39,16 @@ while True:
 
     sigma = sigmas.sum(axis=1).mean(axis=0)
 
+    R = np.linalg.cholesky(sigma)
+    A = data.dot(np.linalg.inv(R).T)
+
     _log_likelihood = np.zeros(num_data)
     pi = 1.0 / (num_data - 1)
-    for idx, x_test in enumerate(data):
-        x_train = np.concatenate((data[:idx], data[idx + 1:]), axis=0)
+    for idx, x_test in enumerate(A):
+        x_train = np.concatenate((A[:idx], A[idx + 1:]), axis=0)
         L = 0
         for train in x_train:
-            L += pi * multivariate_normal.pdf(x_test, mean=train, cov=sigma)
+            L += pi * custom_normal_pdf(x_test, mean=train, R=R)
         _log_likelihood[idx] = np.sum(np.log(L))
     log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
 
