@@ -14,7 +14,7 @@ data = data[:100]  # taking only a small part for testing
 num_data, dim = data.shape
 
 ## Loop until you're happy
-epsilon = 1e-4
+epsilon = 1e-3
 sigma = np.eye(dim)
 log_likelihood = np.asarray([])
 i = 0

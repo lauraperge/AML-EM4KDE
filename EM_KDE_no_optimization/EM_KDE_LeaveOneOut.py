@@ -14,7 +14,7 @@ data = data[:100]  # taking only a small part for testing
 num_data, dim = data.shape
 
 ## Loop until you're happy
-epsilon = 1e-2
+epsilon = 1e-3
 sigma = np.eye(dim)
 log_likelihood = np.asarray([])
 i = 0
@@ -28,10 +28,13 @@ while True:
         # E step
         responsibility = e_step(x_test, x_train, sigma)
         # M step
-        sigmas[idx] = m_step(x_test, x_train, responsibility, dim)
+        sigmas[idx] = m_step(x_test, x_train, responsibility)
 
     _log_likelihood = np.zeros(num_data)
     pi = 1.0 / (num_data - 1)
+
+    sigma = sigmas.sum(axis=1).sum(axis=0) / num_data
+
     for idx, x_test in enumerate(data):
         # x_test = np.asarray([x_test])
         x_train = np.concatenate((data[:idx], data[idx + 1:]), axis=0)
@@ -41,7 +44,6 @@ while True:
         _log_likelihood[idx] = np.sum(np.log(L))
     log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
 
-    sigma = sigmas.sum(axis=1).sum(axis=0) / num_data
     if i > 1:
         change = 1. - log_likelihood[-1] / log_likelihood[-2]
         print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
