@@ -3,9 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.stats import multivariate_normal
 
-# custom
-from EM_KDE_no_optimization.utils import e_step as original_e_step
-from EM_KDE_optimized.utils import plot_normal, e_step, m_step
+from lori.plot import plot_kde
+from EM_KDE_optimized.utils import e_step, m_step
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
@@ -23,10 +22,9 @@ i = 0
 while True:
     i += 1
     sigmas = np.zeros([num_data, num_data - 1, dim, dim])
-    resp_diff = np.zeros([num_data, num_data - 1])
 
     R = np.linalg.cholesky(sigma)
-    A = data.dot(np.linalg.inv(R))
+    A = data.dot(np.linalg.inv(R).T)
     for idx, x_test in enumerate(data):
         x_train = np.concatenate((data[:idx], data[idx + 1:]), axis=0)
 
@@ -35,18 +33,11 @@ while True:
 
         # E step
         responsibility = e_step(a_test, a_train, R)
-        # responsibility = original_e_step(x_test, x_train, sigma)
-
-        resp_diff[idx] = responsibility / original_e_step(x_test, x_train, sigma)
 
         # M step
         sigmas[idx] = m_step(x_test, x_train, responsibility, dim)
 
-    plt.plot(resp_diff)
-    plt.show()
-
     sigma = sigmas.sum(axis=1).mean(axis=0)
-    print(sigma)
 
     _log_likelihood = np.zeros(num_data)
     pi = 1.0 / (num_data - 1)
@@ -72,14 +63,6 @@ plt.plot(log_likelihood)
 plt.xlabel('Iterations')
 plt.ylabel('Log-likelihood')
 
-## Plot data
 plt.figure(2)
-if dim == 2:
-    plt.plot(data[:, 0], data[:, 1], '.')
-if dim == 3:
-    plt.plot3(data[:, 0], data[:, 1], data[:, 2], '.')
-
-for _data in data:
-    plot_normal(_data, sigma)
-
-plt.show()
+## Plot data
+plot_kde(data, sigma, 0.1)
