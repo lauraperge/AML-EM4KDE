@@ -2,8 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.stats import multivariate_normal
+from lori.plot import plot_kde
 
-from utils import plot_normal, e_step, m_step
+from EM_KDE_no_optimization.utils import e_step, m_step
+
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
 
@@ -12,7 +14,7 @@ data = data[:100]  # taking only a small part for testing
 num_data, dim = data.shape
 
 ## Loop until you're happy
-epsilon = 1e-4
+epsilon = 1e-2
 sigma = np.eye(dim)
 log_likelihood = np.asarray([])
 i = 0
@@ -53,14 +55,6 @@ plt.plot(log_likelihood)
 plt.xlabel('Iterations')
 plt.ylabel('Log-likelihood')
 
-## Plot data
 plt.figure(2)
-if dim == 2:
-    plt.plot(data[:, 0], data[:, 1], '.')
-if dim == 3:
-    plt.plot3(data[:, 0], data[:, 1], data[:, 2], '.')
-
-for _data in data:
-    plot_normal(_data, sigma)
-
-plt.show()
+## Plot data
+plot_kde(data, sigma, 0.1)

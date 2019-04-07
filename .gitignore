@@ -1,7 +1,16 @@
 .DS_Store
 
 \.idea/
+\.__pycache__/
 
 exercise3/test\.py
+
+EM_KDE_no_optimization/__pycache__/utils\.cpython-37\.pyc
 
-EM_KDE_no_optimization/__pycache__/utils\.cpython-37\.pyc
+lori/__pycache__/
+
+exercise3/test2\.py
+
+EM_KDE_optimized/__pycache__/
+
+*.pyc

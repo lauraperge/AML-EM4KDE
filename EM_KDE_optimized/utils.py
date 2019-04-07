@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 
+
 ## Helper function for plotting a 2D Gaussian
 def plot_normal(mu, Sigma):
     l, V = np.linalg.eigh(Sigma)
@@ -12,19 +13,21 @@ def plot_normal(mu, Sigma):
     Txy = mu + ((V * np.sqrt(l)).dot(xy)).T
     plt.plot(Txy[:, 0], Txy[:, 1])
 
-## E-step of the EM algo
-def e_step(x_test, x_train, sigma):
-    num_test, num_train = len(x_test), len(x_train)
+
+## E-step of the EM algorithm
+def e_step(a_test, a_train, R):
+    num_test, num_train = len(a_test), len(a_train)
     pi = 1.0 / num_train
     responsibility = np.zeros([num_train])
-    for k, train in enumerate(x_train):
+    for k, train in enumerate(a_train):
         responsibility[k] = pi * \
-            multivariate_normal.pdf(x_test, mean=train, cov=sigma)
+                            custom_normal_pdf(a_test, mean=train, R=R)
     responsibility /= np.sum(responsibility, axis=0)
 
     return responsibility
 
-## M-step of the EM-algo
+
+## M-step of the EM-algorithm
 def m_step(x_test, x_train, responsibility, dim):
     num_test, num_train = len(x_test), len(x_train)
 
@@ -35,8 +38,35 @@ def m_step(x_test, x_train, responsibility, dim):
         sigmas[k] = (responsibility[k] * delta.T).dot(delta)
     return sigmas
 
+
+def pdf(x, mean, sigma):
+    R = np.linalg.cholesky(sigma)
+    R_inv = np.linalg.inv(R)
+
+    if sigma.ndim < 2:
+        dim = 1
+    else:
+        dim = sigma.shape[0]
+
+    x = x[np.newaxis].T
+    mean = mean[np.newaxis].T
+
+    # print(xT.dot(R_inv.T))
+    # print(meanT.dot(R_inv.T))
+
+    PI2R = ((2 * np.pi) ** dim * np.linalg.det(sigma)) ** 0.5
+
+    q_1 = (x.T - mean.T).dot(R_inv.T)
+    q_2 = R_inv.dot(x - mean)
+
+    pdf = (1 / PI2R) * np.exp(- 0.5 * (x - mean).T.dot(np.linalg.inv(sigma)).dot(x - mean))
+    # pdf = (1 / PI2R) * np.exp(- 0.5 * q_1.dot(q_1.T))
+
+    return np.squeeze(pdf)
+
+
 ## custom mv. norm pdf
-def custom_normal_pdf(a, mean, cov_lower_triangle):
+def custom_normal_pdf(a, mean, R):
     """Multivariate Normal (Gaussian) probability density function with custom implementation. 
  
     Parameters 
@@ -47,7 +77,7 @@ def custom_normal_pdf(a, mean, cov_lower_triangle):
         mean : array_like 
             Mean of distribution. (In our implementation a_k for train data) 
          
-        cov_lower_triangle : array_like 
+        cov_lower_triangle : array_like
             Lower triangle matrix of covariance of distribution. (In our implementation R) 
      
     Returns 
@@ -56,53 +86,66 @@ def custom_normal_pdf(a, mean, cov_lower_triangle):
             Probability density function evaluated at `a` 
  
     """
-    dim = mean.shape[1]
-    PI2R = np.power(2*np.pi, dim/2) * np.prod(np.diagonal(cov_lower_triangle))
-
-    if len(a)>1:
-        pdf = np.exp(-np.log(PI2R) - 0.5 * (np.sum(np.power(a, 2), 1) - 2 *
-                                            a.dot(mean.T) + np.sum(np.power(mean, 2))))
+    if R.ndim < 2:
+        dim = 1
     else:
-        pdf = np.exp(-np.log(PI2R) - 0.5 * (np.sum(np.power(a, 2)) - 2 *
-                                            a.dot(mean.T) + np.sum(np.power(mean, 2))))
-    return pdf
+        dim = R.shape[0]
+
+    PI2R = (2 * np.pi) ** (dim / 2) * np.linalg.det(R)
+    # PI2R = np.linalg.det(2 * np.pi * R.T.dot(R)) ** 0.5
+    if a.ndim == 0:
+        a = a[np.newaxis]
+    elif a.ndim == 1:
+        if dim == 1:
+            a = a[:, np.newaxis]
+        else:
+            a = a[np.newaxis, :]
+    # pdf = (1 / PI2R) * (np.exp(- 0.5 * (np.sum(np.power(a, 2), 1) - 2 *
+    #                                     a.dot(mean.T) + np.sum(np.power(mean, 2)))))
+
+    distance = a - mean
+    pdf = (1 / PI2R) * np.exp(- 0.5 * (
+        distance.dot(distance.T)))
+
+    return np.squeeze(pdf)
 
 
-########### try
-## Load data
-data = loadmat('../faithfull/faithful.mat')['X']
-data = data[:20]  # taking only a small part for testing
+if __name__ == '__main__':
+    ########### try
+    ## Load data
+    data = loadmat('../faithfull/faithful.mat')['X']
+    data = data  # taking only a small part for testing
 
-num_data, dim = data.shape
-sigma = np.matrix([[1.2, 0.1], [0.1, 10.2]])
-r = np.linalg.cholesky(sigma)
-r = r.T
-# print(r)
-# print(sigma, np.dot(r.T,r), np.dot(r,r.T))
+    num_data, dim = data.shape
+    sigma = np.asarray([[0.28570579, 0.03680529],
+                        [0.03680529, 1.0997311]])
+    R = np.linalg.cholesky(sigma)
 
-A = data.dot(np.linalg.inv(r))
+    A = data.dot(np.linalg.inv(R).T)
 
-x_test = data[:3]
-x_train = data[4:]
+    print(A.shape, data.shape)
 
-a_test = A[:3]
-a_train = A[4:]
+    x_test = data[0]
+    x_train = data[1:]
 
-scipy_norm = []
-custom_norm = []
-for train in a_train:
-    # print("x_test, x_train: \t", a_test.dot(r), train.dot(r))
-    custom_norm.append(custom_normal_pdf(a = a_test, mean = train, cov_lower_triangle = r))
+    a_test = A[0]
+    a_train = A[1:]
 
-print("-----------------------")
-for train in x_train:
-    # print("scipy_normal_pdf: \t ",x_test,train)
-    scipy_norm.append(multivariate_normal.pdf(x = x_test, mean = train, cov = sigma))
+    scipy_norm = []
+    custom_norm = []
+    for train in a_train:
+        custom_norm.append(custom_normal_pdf(a=a_test, mean=train, R=R))
 
-# print('cust :  {}; \n scipy:  {}'.format(custom_norm, scipy_norm))
+    # for train in x_train:
+    #     custom_norm.append(pdf(x=x_test, mean=train, sigma=sigma))
 
-diff = np.array(np.array(custom_norm).reshape((16,3)) - np.array(scipy_norm))
-coord = [i for i in range(len(a_train))]
+    for train in x_train:
+        scipy_norm.append(multivariate_normal.pdf(x=x_test, mean=train, cov=sigma))
 
-plt.plot(coord, diff[:, 1])
-plt.show()
+    print(custom_norm)
+    print(scipy_norm)
+
+    diff = np.power(np.subtract(np.array(custom_norm), np.array(scipy_norm)), 2)
+
+    plt.plot(diff)
+    plt.show()
