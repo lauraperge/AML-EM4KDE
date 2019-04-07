@@ -3,7 +3,33 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.stats import multivariate_normal
 
-from utils import plot_normal, e_step, m_step
+from utils import plot_normal
+
+
+def e_step(x_test, x_train, sigma):
+    num_test, num_train = len(x_test), len(x_train)
+    pi = 1.0 / num_train
+    responsibility = np.zeros([num_train])
+    for k, train in enumerate(x_train):
+        responsibility[k] = pi * \
+            multivariate_normal.pdf(x_test, mean=train, cov=sigma)
+    responsibility /= np.sum(responsibility, axis=0)
+
+    return responsibility
+
+
+def m_step(x_test, x_train, responsibility):
+    num_test, num_train = len(x_test), len(x_train)
+    _, dim = x_train.shape
+
+    sigmas = np.zeros([num_train, dim, dim])
+
+    for k, train in enumerate(x_train):
+        delta = (x_test - train)[np.newaxis]
+        sigmas[k] = (responsibility[k] * delta.T).dot(delta)
+    return sigmas
+
+
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
 

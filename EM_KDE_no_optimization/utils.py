@@ -30,10 +30,11 @@ def m_step(x_test, x_train, responsibility, dim):
     num_test, num_train = len(x_test), len(x_train)
 
     sigmas = np.zeros([num_train, dim, dim])
-    sigmas_test = 0
+    
     for k, train in enumerate(x_train):
+        sigmas[k] = 0
         for n, test in enumerate(x_test):
             delta = (test - train)[np.newaxis]
-            sigmas_test += (responsibility[n, k] * delta.T).dot(delta)
-        sigmas[k] = sigmas_test/num_test
+            sigmas[k] = sigmas[k] + (responsibility[n, k] * delta.T).dot(delta)
+        sigmas[k] = sigmas[k]/num_test
     return sigmas
