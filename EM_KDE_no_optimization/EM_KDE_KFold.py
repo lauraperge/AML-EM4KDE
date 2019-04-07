@@ -41,7 +41,7 @@ while True:
     
     # sum according to num_train, sum according to fold, but note doesnt say to divide by K
     sigma = sigmas.sum(axis=1).sum(axis=0) / K
-    print(sigma)
+    #print(sigma)
 
     # calculate log likelihood
     _log_likelihood = np.zeros(K)
@@ -52,11 +52,13 @@ while True:
         x_test = data[test_index, :]
         
         L = 0
-        for train in x_train:
-            for test in x_test:
-                L += multivariate_normal.pdf(test, mean=train, cov=sigma)
-                print(L)
-        _log_likelihood[idx] = np.log(L)
+        for test in x_test:
+            _L = 0
+            for train in x_train:
+                _L += multivariate_normal.pdf(test, mean=train, cov=sigma)
+            L += np.log(_L)    
+        _log_likelihood[idx] = L
+        
         idx += 1
     log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
     
