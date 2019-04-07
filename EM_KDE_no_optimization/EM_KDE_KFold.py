@@ -16,7 +16,7 @@ num_data, dim = data.shape
 
 # K-fold crossvalidation
 K = 10
-CV = model_selection.KFold(n_splits=K, shuffle=False)
+CV = model_selection.KFold(n_splits=K, shuffle=True)
 
 ## Loop until you're happy
 epsilon = 1e-3

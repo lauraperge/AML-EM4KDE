@@ -18,8 +18,9 @@ def e_step(a_test, a_train, R):
     return responsibility
 
 
-def m_step(x_test, x_train, responsibility, dim):
-    num_test, num_train = len(x_test), len(x_train)
+def m_step(x_test, x_train, responsibility):
+    num_train, dim = x_train.shape
+    num_test = len(x_test)
 
     sigmas = np.zeros([num_train, dim, dim])
 
