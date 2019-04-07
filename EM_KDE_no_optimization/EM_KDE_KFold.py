@@ -4,7 +4,8 @@ from scipy.io import loadmat
 from scipy.stats import multivariate_normal
 from sklearn import model_selection
 
-from utils import plot_normal, e_step, m_step
+from EM_KDE_no_optimization.utils import plot_normal, e_step, m_step
+from lori.plot import plot_kde
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
@@ -18,14 +19,14 @@ K = 10
 CV = model_selection.KFold(n_splits=K, shuffle=False)
 
 ## Loop until you're happy
-epsilon = 1e-4
+epsilon = 1e-3
 sigma = np.eye(dim)
 log_likelihood = np.asarray([])
 i = 0
 while True:
     i += 1
     sigmas = []
-    
+
     for train_index, test_index in CV.split(data):
         # extract training and test set for current CV fold
         x_train = data[train_index, :]
@@ -33,15 +34,14 @@ while True:
 
         # E step
         responsibility = e_step(x_test, x_train, sigma)
-        
+
         # M step
         sigmas.append(m_step(x_test, x_train, responsibility, dim))
-        
+
     sigmas = np.array(sigmas)
-    
+
     # sum according to num_train, sum according to fold, but note doesnt say to divide by K
-    sigma = sigmas.sum(axis=1).sum(axis=0) / K
-    #print(sigma)
+    sigma = sigmas.sum(axis=1).mean(axis=0)
 
     # calculate log likelihood
     _log_likelihood = np.zeros(K)
@@ -50,20 +50,20 @@ while True:
         # extract training and test set for current CV fold
         x_train = data[train_index, :]
         x_test = data[test_index, :]
-        
-        L = 0
-        for test in x_test:
-            _L = 0
-            for train in x_train:
-                _L += multivariate_normal.pdf(test, mean=train, cov=sigma)
-            L += np.log(_L)    
-        _log_likelihood[idx] = L
-        
+
+        num_test, num_train = len(x_test), len(x_train)
+
+        L = np.zeros([num_test, num_train])
+        for j, test in enumerate(x_test):
+            for k, train in enumerate(x_train):
+                L[j, k] = multivariate_normal.pdf(test, mean=train, cov=sigma)
+        _log_likelihood[idx] = L.mean()
+
         idx += 1
-    log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
-    
+    log_likelihood = np.append(log_likelihood, _log_likelihood.mean())
+
     if i > 1:
-        change = + 1. - log_likelihood[-1] / log_likelihood[-2]
+        change = -(1. - log_likelihood[-1] / log_likelihood[-2])
         print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
         if change < epsilon:
             break
@@ -74,15 +74,6 @@ plt.figure(1)
 plt.plot(log_likelihood)
 plt.xlabel('Iterations')
 plt.ylabel('Log-likelihood')
-
-## Plot data
-plt.figure(2)
-if dim == 2:
-    plt.plot(data[:, 0], data[:, 1], '.')
-if dim == 3:
-    plt.plot3(data[:, 0], data[:, 1], data[:, 2], '.')
-
-for _data in data:
-    plot_normal(_data, sigma)
-
 plt.show()
+
+plot_kde(data, sigma, 0.1)

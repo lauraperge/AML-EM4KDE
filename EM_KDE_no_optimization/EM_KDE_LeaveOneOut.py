@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.stats import multivariate_normal
 
-from utils import plot_normal
+from EM_KDE_no_optimization.utils import plot_normal
 
 
 def e_step(x_test, x_train, sigma):
@@ -12,7 +12,7 @@ def e_step(x_test, x_train, sigma):
     responsibility = np.zeros([num_train])
     for k, train in enumerate(x_train):
         responsibility[k] = pi * \
-            multivariate_normal.pdf(x_test, mean=train, cov=sigma)
+                            multivariate_normal.pdf(x_test, mean=train, cov=sigma)
     responsibility /= np.sum(responsibility, axis=0)
 
     return responsibility
@@ -38,7 +38,7 @@ data = data[:100]  # taking only a small part for testing
 num_data, dim = data.shape
 
 ## Loop until you're happy
-epsilon = 1e-4
+epsilon = 1e-3
 sigma = np.eye(dim)
 log_likelihood = np.asarray([])
 i = 0
@@ -52,7 +52,7 @@ while True:
         # E step
         responsibility = e_step(x_test, x_train, sigma)
         # M step
-        sigmas[idx] = m_step(x_test, x_train, responsibility, dim)
+        sigmas[idx] = m_step(x_test, x_train, responsibility)
 
     _log_likelihood = np.zeros(num_data)
     pi = 1.0 / (num_data - 1)
@@ -64,8 +64,7 @@ while True:
             L += pi * multivariate_normal.pdf(x_test, mean=train, cov=sigma)
         _log_likelihood[idx] = np.sum(np.log(L))
     log_likelihood = np.append(log_likelihood, _log_likelihood.sum())
-
-    sigma = sigmas.sum(axis=1).sum(axis=0) / num_data
+    sigma = sigmas.mean(axis=2).sum(axis=1).mean(axis=0)
     if i > 1:
         change = 1. - log_likelihood[-1] / log_likelihood[-2]
         print('Run {}, log likelihood: {}, change: {}'.format(i, log_likelihood[-1], change))
