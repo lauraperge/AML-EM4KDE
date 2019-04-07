@@ -5,7 +5,7 @@ from scipy.stats import multivariate_normal
 from sklearn import model_selection
 
 from EM_KDE_no_optimization.utils import e_step, m_step
-from lori.plot import plot_kde
+from EM_KDE_no_optimization.plot import plot_kde
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']

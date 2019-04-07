@@ -3,18 +3,6 @@ import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 
 
-## Helper function for plotting a 2D Gaussian
-
-
-def plot_normal(mu, Sigma):
-    l, V = np.linalg.eigh(Sigma)
-    l[l < 0] = 0
-    t = np.linspace(0.0, 2.0 * np.pi, 100)
-    xy = np.stack((np.cos(t), np.sin(t)))
-    Txy = mu + ((V * np.sqrt(l)).dot(xy)).T
-    plt.plot(Txy[:, 0], Txy[:, 1])
-
-
 def e_step(x_test, x_train, sigma):
     num_test, num_train = len(x_test), len(x_train)
 

@@ -4,16 +4,6 @@ import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 
 
-## Helper function for plotting a 2D Gaussian
-def plot_normal(mu, Sigma):
-    l, V = np.linalg.eigh(Sigma)
-    l[l < 0] = 0
-    t = np.linspace(0.0, 2.0 * np.pi, 100)
-    xy = np.stack((np.cos(t), np.sin(t)))
-    Txy = mu + ((V * np.sqrt(l)).dot(xy)).T
-    plt.plot(Txy[:, 0], Txy[:, 1])
-
-
 def e_step(a_test, a_train, R):
     num_test, num_train = len(a_test), len(a_train)
 
@@ -26,17 +16,6 @@ def e_step(a_test, a_train, R):
     responsibility /= np.sum(responsibility, axis=0)
 
     return responsibility
-
-
-# def e_step(x_test, x_train, sigma):
-#     num_test, num_train = len(x_test), len(x_train)
-#
-#     responsibility = np.zeros([num_train, num_test])
-#     for k, train in enumerate(x_train):
-#         responsibility[k] = multivariate_normal.pdf(x_test, mean=train, cov=sigma)
-#     responsibility /= np.sum(responsibility, axis=0)
-#
-#     return responsibility
 
 
 def m_step(x_test, x_train, responsibility, dim):
@@ -83,32 +62,6 @@ def is_converged(log_likelihood, epsilon):
         return False
 
 
-def pdf(x, mean, sigma):
-    R = np.linalg.cholesky(sigma)
-    R_inv = np.linalg.inv(R)
-
-    if sigma.ndim < 2:
-        dim = 1
-    else:
-        dim = sigma.shape[0]
-
-    x = x[np.newaxis].T
-    mean = mean[np.newaxis].T
-
-    # print(xT.dot(R_inv.T))
-    # print(meanT.dot(R_inv.T))
-
-    PI2R = ((2 * np.pi) ** dim * np.linalg.det(sigma)) ** 0.5
-
-    q_1 = (x.T - mean.T).dot(R_inv.T)
-    q_2 = R_inv.dot(x - mean)
-
-    pdf = (1 / PI2R) * np.exp(- 0.5 * (x - mean).T.dot(np.linalg.inv(sigma)).dot(x - mean))
-    # pdf = (1 / PI2R) * np.exp(- 0.5 * q_1.dot(q_1.T))
-
-    return np.squeeze(pdf)
-
-
 ## custom mv. norm pdf
 def custom_normal_pdf(a, mean, R):
     """Multivariate Normal (Gaussian) probability density function with custom implementation. 
@@ -136,7 +89,7 @@ def custom_normal_pdf(a, mean, R):
         dim = R.shape[0]
 
     PI2R = (2 * np.pi) ** (dim / 2) * np.linalg.det(R)
-    # PI2R = np.linalg.det(2 * np.pi * R.T.dot(R)) ** 0.5
+
     if a.ndim == 0:
         a = a[np.newaxis]
     elif a.ndim == 1:
@@ -148,14 +101,12 @@ def custom_normal_pdf(a, mean, R):
     #                                     a.dot(mean.T) + np.sum(np.power(mean, 2)))))
 
     distance = a - mean
-    pdf = (1 / PI2R) * np.exp(- 0.5 * (
-        distance.dot(distance.T)))
+    pdf = (1 / PI2R) * np.exp(- 0.5 * (distance.dot(distance.T)))
 
     return np.squeeze(pdf)
 
 
 if __name__ == '__main__':
-    ########### try
     ## Load data
     data = loadmat('../faithfull/faithful.mat')['X']
     data = data  # taking only a small part for testing

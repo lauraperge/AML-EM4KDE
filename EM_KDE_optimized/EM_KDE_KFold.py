@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from sklearn import model_selection
 
 from EM_KDE_optimized.utils import e_step, m_step, calculate_log_likelihood, is_converged
-from lori.plot import plot_kde
+from EM_KDE_optimized.plot import plot_kde
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
