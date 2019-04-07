@@ -15,14 +15,13 @@ def plot_normal(mu, Sigma):
 
 
 ## E-step of the EM algorithm
-def e_step(x_test, x_train, sigma):
-    R = np.linalg.cholesky(sigma)
-    num_test, num_train = len(x_test), len(x_train)
+def e_step(a_test, a_train, R):
+    num_test, num_train = len(a_test), len(a_train)
     pi = 1.0 / num_train
     responsibility = np.zeros([num_train])
-    for k, train in enumerate(x_train):
+    for k, train in enumerate(a_train):
         responsibility[k] = pi * \
-                            custom_normal_pdf(x_test, mean=train, cov_lower_triangle=R)
+                            custom_normal_pdf(a_test, mean=train, cov_lower_triangle=R)
     responsibility /= np.sum(responsibility, axis=0)
 
     return responsibility
@@ -80,7 +79,8 @@ if __name__ == '__main__':
     data = data  # taking only a small part for testing
 
     num_data, dim = data.shape
-    sigma = np.asarray([[1.0, 2.3], [-.10, .20]])
+    sigma = np.asarray([[0.28570579, 0.03680529],
+                        [0.03680529, 1.0997311]])
     R = np.linalg.cholesky(sigma)
 
     A = data.dot(np.linalg.inv(R))
