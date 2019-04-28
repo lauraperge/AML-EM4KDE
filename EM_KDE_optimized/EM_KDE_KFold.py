@@ -18,7 +18,7 @@ data = data[:250]  # taking only a small part for testing
 num_data, dim = data.shape
 
 # K-fold crossvalidation
-K = 50
+K = 250
 CV = model_selection.KFold(n_splits=K, shuffle=False)
 
 ## Loop until you're happy
@@ -48,8 +48,6 @@ while True:
         sigmas.append(m_step(x_test, x_train, responsibility))
 
     sigma = np.array(sigmas).sum(axis=1).mean(axis=0)
-
-    print(np.linalg.eigvalsh(sigma))
 
     R = np.linalg.cholesky(sigma)
     A = data.dot(np.linalg.inv(R).T)

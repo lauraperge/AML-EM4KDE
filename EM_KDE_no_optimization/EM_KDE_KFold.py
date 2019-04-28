@@ -10,12 +10,12 @@ from EM_KDE_no_optimization.plot import plot_kde
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
 
-data = data[:100]  # taking only a small part for testing
+data = data[:250]  # taking only a small part for testing
 
 num_data, dim = data.shape
 
 # K-fold crossvalidation
-K = 10
+K = 250
 CV = model_selection.KFold(n_splits=K, shuffle=True)
 
 ## Loop until you're happy
