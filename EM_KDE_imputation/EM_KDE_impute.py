@@ -14,11 +14,10 @@ data = loadmat('../faithfull/faithful.mat')['X']
 # np.random.shuffle(data)
 # data = np.concatenate([data, loadmat('../faithfull/faithful.mat')['X']], axis=1)
 
-raw_data = data[:250]  # taking only a small part for testing
+raw_data = data  # taking only a small part for testing
 data = np.array(raw_data[:-10])
-damaged_data = np.array([remove_random_value(data) for data in raw_data[-10:]])
+[damaged_data, removed_values] = remove_random_value(raw_data[-10:])
 
-'''
 num_data, dim = data.shape
 
 # K-fold cross validation
@@ -85,6 +84,9 @@ sigma = [[4.28747436e-02, 2.92396851e-01, 2.46394066e-04, 1.05465785e-01],
 sigma = [[0.0322203, 0.0194771],
          [0.0194771, 3.8548159]]
 
+'''
+
+imputed_values = []
 restored_data = []
 for test_data in damaged_data:
     # get index of missing dimension
@@ -106,20 +108,19 @@ for test_data in damaged_data:
     cond_exp = np.array([conditional_expectation(mean, test_data, sigma, missing_dim) for mean in train_data])
     imputed_value = np.sum(np.multiply(cond_exp, responsibility))
 
+    imputed_values.append(imputed_value)
     restored_element = np.insert(test_data, missing_dim, imputed_value)
     restored_data.append(restored_element)
 
 restored_data = np.array(restored_data)
+imputed_values = np.array(imputed_values)
 
-raw_data = loadmat('../faithfull/faithful.mat')['X'][:250]
+divergence = np.abs(removed_values - imputed_values) / removed_values
 
-print(list(zip(raw_data[-10:], restored_data)))
+plt.figure(2)
+plt.plot(divergence)
+plt.xlabel('Index')
+plt.ylabel('Imputation error in %')
+plt.show()
 
-# plot_kde(data, sigma, 0.1)
-
-'''
-sigma = [[1, 2, 3, 4],
-         [5, 6, 7, 8],
-         [9, 10, 11, 12],
-         [13, 14, 15, 16]]
-'''
+plot_kde(data, sigma, 0.1)

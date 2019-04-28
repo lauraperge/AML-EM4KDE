@@ -109,11 +109,20 @@ def custom_normal_pdf(a, mean, R):
     return np.squeeze(pdf)
 
 
-def remove_random_value(data_element):
-    dim = len(data_element) - 1
-    i = round(random.random() * dim)
-    data_element[i] = None
-    return data_element
+def remove_random_value(data_array):
+    num_data, dim = data_array.shape
+    removed_values = []
+
+    def remove_random(item):
+        i = round(random.random() * dim - 1)
+        removed_values.append(item[i])
+        item[i] = None
+        return item
+
+    damaged_data = np.array([remove_random(data) for data in data_array])
+    removed_values = np.array(removed_values)
+
+    return [damaged_data, removed_values]
 
 
 def remove_dim(sigma, dim):
@@ -124,7 +133,7 @@ def remove_dim(sigma, dim):
 
 def conditional_expectation(mean, test, sigma, dim):
     # S11 = remove_dim(sigma, dim)
-    S22_inv = sigma[dim][dim]
+    S22_inv = 1 / sigma[dim][dim]
     S12 = np.delete(sigma[dim], dim, axis=0)[np.newaxis].T
 
     m1 = mean[dim]
