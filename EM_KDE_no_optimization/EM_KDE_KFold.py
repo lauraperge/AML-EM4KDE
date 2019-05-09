@@ -10,6 +10,9 @@ from EM_KDE_no_optimization.plot import plot_kde
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
 
+## Real world data (may make sense to crop end, since it's quite big)
+# data = np.genfromtxt('../data/winequality-white.csv', delimiter=';')[1:,:]
+
 data = data[:250]  # taking only a small part for testing
 
 num_data, dim = data.shape

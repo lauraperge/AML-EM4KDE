@@ -9,6 +9,10 @@ from EM_KDE_optimized.plot import plot_kde
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
 
+## Real world data (may make sense to crop end, since it's quite big)
+# data = np.genfromtxt('../data/winequality-white.csv', delimiter=';')[1:,:]
+
+
 ## Testing with higher dimension data
 # np.random.shuffle(data)
 # data = np.concatenate([data, loadmat('../faithfull/faithful.mat')['X']], axis=1)

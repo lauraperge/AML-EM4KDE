@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from sklearn import model_selection
+from sklearn.metrics import mean_squared_error
 
 from EM_KDE_imputation.utils import remove_random_value, remove_dim, conditional_expectation, e_step, m_step, \
     calculate_log_likelihood, is_converged
@@ -9,6 +10,9 @@ from EM_KDE_imputation.plot import plot_kde
 
 ## Load data
 data = loadmat('../faithfull/faithful.mat')['X']
+
+## Real world data (may make sense to crop end, since it's quite big)
+# data = np.genfromtxt('../data/winequality-white.csv', delimiter=';')[1:,:250]
 
 ## Testing with higher dimension data
 # np.random.shuffle(data)
@@ -116,6 +120,7 @@ restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
 
 divergence = np.abs(removed_values - imputed_values) / removed_values
+# mse = mean_squared_error(removed_values, imputed_values)
 
 plt.figure(2)
 plt.plot(divergence)
