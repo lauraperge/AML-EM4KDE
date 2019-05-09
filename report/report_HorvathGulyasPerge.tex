@@ -1,0 +1,142 @@
+% Template for ICASSP-2010 paper; to be used with:
+%          mlspconf.sty  - ICASSP/ICIP LaTeX style file adapted for MLSP, and
+%          IEEEbib.bst - IEEE bibliography style file.
+% --------------------------------------------------------------------------
+\documentclass{article}
+\usepackage{amsmath,graphicx,02460}
+
+
+
+\toappear{02460 Advanced Machine Learning}
+
+
+% Example definitions.
+% --------------------
+\def\x{{\mathbf x}}
+\def\L{{\cal L}}
+
+% Title.
+% ------
+\title{Imputation of Randomly Missing Values using Kernel Density Estimation with Expectation Maximization}
+%
+% Single address.
+% ---------------
+\name{Lorant Gulyas, Daniel Horvath \& Laura Perge}
+\address{Author Affiliation(s)}
+%
+% For example:
+% ------------
+%\address{School\\
+%	Department\\
+%	Address}
+%
+% Two addresses (uncomment and modify for two-address case).
+% ----------------------------------------------------------
+%\twoauthors
+%  {A. Author-one, B. Author-two\sthanks{Thanks to XYZ agency for funding.}}
+%	{School A-B\\
+%	Department A-B\\
+%	Address A-B}
+%  {C. Author-three, D. Author-four\sthanks{The fourth author performed the work
+%	while at ...}}
+%	{School C-D\\
+%	Department C-D\\
+%	Address C-D}
+%
+\begin{document}
+%\ninept
+%
+
+\maketitle
+%
+\begin{abstract}
+questions, methods, major findings, quantitative results,interpretation and conclusion;
+NO ABBREVIATIONS OR REFERENCES
+\end{abstract}
+%
+\begin{keywords}
+density estimation, missing value imputation, machine learning, kernel density, expectation maximization
+\end{keywords}
+%
+\section{INTRODUCTION}
+\label{sec:intro}
+
+What is the problem: context, literature review, summary of scope of the problem and limitations;
+purpose and rationale of the work including hypothesis, questions, problems investigated
+
+\section{MATERIALS AND METHODS}
+\label{sec:MatMet}
+
+Experiments; Collection of Data; Description of methods to a level that others can reproduce the results
+
+\section{RESULTS}
+\label{sec:results}
+
+Objective presentation of key results, without! interpretation - text, tables and figures
+Important negative results should be reported!
+
+\section{DISCUSSION}
+\label{sec:discussion}
+Interpret (subjective) results in light of state of the art about the subject of investigation;
+Explain new understanding in light of results
+
+\section{CONCLUSION}
+\label{sec:conclusion}
+
+Quantitative and specific linked to problems and results
+
+% Below is an example of how to insert images. Delete the ``\vspace'' line,
+% uncomment the preceding line ``\centerline...'' and replace ``imageX.ps''
+% with a suitable PostScript file name.
+% -------------------------------------------------------------------------
+\begin{figure}[htb]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  %\centerline{\includegraphics[width=8.5cm]{image1}}
+%  \vspace{2.0cm}
+  \centerline{(a) Result 1}\medskip
+\end{minipage}
+%
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  %\centerline{\includegraphics[width=4.0cm]{image3}}
+%  \vspace{1.5cm}
+  \centerline{(b) Results 3}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.48\linewidth}
+  \centering
+  %\centerline{\includegraphics[width=4.0cm]{image4}}
+%  \vspace{1.5cm}
+  \centerline{(c) Result 4}\medskip
+\end{minipage}
+%
+\caption{Example of placing a figure with experimental results.}
+\label{fig:res}
+%
+\end{figure}
+
+% To start a new column (but not a new page) and help balance the last-page
+% column length use \vfill\pagebreak.
+% -------------------------------------------------------------------------
+\vfill
+\pagebreak
+
+
+\section{REFERENCES}
+\label{sec:ref}
+
+List and number all bibliographical references at the end of the paper.  The references can be numbered in alphabetic order or in order of appearance in the document.  When referring to them in the text, type the corresponding reference number in square brackets as shown at the end of this sentence \cite{C2}.
+
+% References should be produced using the bibtex program from suitable
+% BiBTeX files (here: strings, refs, manuals). The IEEEbib.bst bibliography
+% style file from IEEE produces unsorted bibliography list.
+% -------------------------------------------------------------------------
+\bibliographystyle{IEEEbib}
+\bibliography{refs}
+
+\section{APPENDICES}
+\label{sec:app}
+
+\end{document}
