@@ -21,6 +21,7 @@ data = loadmat('../faithfull/faithful.mat')['X']
 raw_data = data  # taking only a small part for testing
 data = np.array(raw_data[:-10])
 [damaged_data, removed_values] = remove_random_value(raw_data[-10:])
+medians = np.median(data, axis = 0) # for baseline
 
 num_data, dim = data.shape
 
@@ -92,6 +93,7 @@ sigma = [[0.0322203, 0.0194771],
 
 imputed_values = []
 restored_data = []
+median_impute = []
 for test_data in damaged_data:
     # get index of missing dimension
     missing_dim = [idx for idx, value in enumerate(test_data) if np.isnan(value)][0]
@@ -115,17 +117,36 @@ for test_data in damaged_data:
     imputed_values.append(imputed_value)
     restored_element = np.insert(test_data, missing_dim, imputed_value)
     restored_data.append(restored_element)
+    median_impute.append(medians[missing_dim])
 
+median_impute = np.array(median_impute)
 restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
 
 divergence = np.abs(removed_values - imputed_values) / removed_values
-# mse = mean_squared_error(removed_values, imputed_values)
+# mean_squared_error(removed_values, imputed_values)
+divergence_median = np.abs(removed_values - median_impute) / removed_values
+mse = (removed_values - imputed_values)**2
+mse_median = (removed_values - median_impute)**2
 
 plt.figure(2)
-plt.plot(divergence)
+
+plt.plot(np.arange(len(divergence)), divergence, '-b', label='Error')
+plt.plot(np.arange(len(divergence)),
+         divergence_median, '-r', label='Error median')
+leg = plt.legend()
 plt.xlabel('Index')
-plt.ylabel('Imputation error in %')
+plt.ylabel('Imputation error %')
 plt.show()
+
+plt.figure(3)
+
+plt.plot(np.arange(len(mse)), mse, '-b', label='MSE')
+plt.plot(np.arange(len(mse)), mse_median, '-r', label='MSE median')
+leg = plt.legend()
+plt.xlabel('Index')
+plt.ylabel('Imputation error MSE')
+plt.show()
+
 
 plot_kde(data, sigma, 0.1)
