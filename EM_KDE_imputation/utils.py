@@ -173,10 +173,4 @@ if __name__ == '__main__':
     for train in x_train:
         scipy_norm.append(multivariate_normal.pdf(x=x_test, mean=train, cov=sigma))
 
-    print(custom_norm)
-    print(scipy_norm)
-
-    diff = np.power(np.subtract(np.array(custom_norm), np.array(scipy_norm)), 2)
-
-    plt.plot(diff)
-    plt.show()
+    
