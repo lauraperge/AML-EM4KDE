@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from sklearn import model_selection
 from sklearn.metrics import mean_squared_error
 
-from EM_KDE_imputation.utils import remove_random_value, remove_dim, conditional_expectation, e_step, m_step, \
+from EM_KDE_imputation.utils import remove_random_value, conditional_expectation, e_step, m_step, \
     calculate_log_likelihood, is_converged, nadaraya_watson_imputation
 from EM_KDE_imputation.plot import plot_kde
 
@@ -121,20 +121,24 @@ for test_data in damaged_data:
     # print(missing_dim)
     # print(imputed_value)
 
-    imputed_values.append(imputed_value)
     restored_element = np.insert(test_data, missing_dim, imputed_value)
     restored_data.append(restored_element)
     median_impute.append(medians[missing_dim])
+
+    imputed_values.append(imputed_value)
 
 median_impute = np.array(median_impute)
 restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
 
-divergence = np.mean(np.abs(removed_values - imputed_values) / removed_values, axis=1)
-# mean_squared_error(removed_values, imputed_values)
-divergence_median = np.mean(np.abs(removed_values - median_impute) / removed_values, axis=1)
-mse = np.mean((removed_values - imputed_values) ** 2, axis=1)
-mse_median = np.mean((removed_values - median_impute) ** 2, axis=1)
+print(imputed_values)
+print(removed_values)
+
+divergence = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) / removed_values])
+print(divergence)
+divergence_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) / removed_values])
+mse = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) ** 2])
+mse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) ** 2])
 
 plt.figure(2)
 
@@ -149,7 +153,7 @@ plt.figure(3)
 
 plt.plot(np.arange(len(mse)), mse, '-b', label='MSE')
 plt.plot(np.arange(len(mse)), mse_median, '-r', label='MSE median')
-leg = plt.legend()
+plt.legend()
 plt.xlabel('Index')
 plt.ylabel('Imputation error MSE')
 plt.show()

@@ -114,7 +114,8 @@ def remove_random_value(data_array):
     removed_values = []
 
     def remove_random(item):
-        idx = np.random.choice(range(dim), size=2, replace=False)
+        size = round(random.random() * (dim - 2)) + 1
+        idx = np.sort(np.unique(np.random.choice(range(dim), size=size, replace=False)))
         removed_dims = []
         for i in idx:
             removed_dims.append(item[i])
@@ -126,12 +127,6 @@ def remove_random_value(data_array):
     removed_values = np.array(removed_values)
 
     return [damaged_data, removed_values]
-
-
-def remove_dim(sigma, dim):
-    reduced_sigma = np.delete(sigma, dim, axis=0)
-    reduced_sigma = np.delete(reduced_sigma, dim, axis=1)
-    return reduced_sigma
 
 
 def conditional_expectation(mean, test, sigma, dim):
@@ -146,37 +141,33 @@ def conditional_expectation(mean, test, sigma, dim):
 
 
 def nadaraya_watson_imputation(damaged_data, train_data, sigma):
-    print(damaged_data)
+    # get indexes of the missing and existing dimensions of the test data
     missing_dim = [idx for idx, value in enumerate(damaged_data) if np.isnan(value)]
     existing_dim = [idx for idx, value in enumerate(damaged_data) if not np.isnan(value)]
 
+    # Remove the placeholder 'nan' values from the damaged data
     damaged_data = damaged_data[np.ix_(existing_dim)]
 
-    # remove data of that dimension
-    reduced_sigma = sigma[np.ix_(existing_dim, existing_dim)]
-    misssing_sigma = sigma[np.ix_(missing_dim, missing_dim)]
+    # create sigma values for the missing and existing dimensions
+    existing_dim_sigma = sigma[np.ix_(existing_dim, existing_dim)]
+    missing_dim_sigma = sigma[np.ix_(missing_dim, missing_dim)]
 
     # create transformed data
-    R_reduced = np.linalg.cholesky(reduced_sigma)
-    R_reduced_inv_T = np.linalg.inv(R_reduced).T
-
-    R_missing_T = np.linalg.cholesky(misssing_sigma).T
-
     R = np.linalg.cholesky(sigma)
-    R_inv_T = np.linalg.inv(R).T
-    a = train_data.dot(R_inv_T)
-    a_train_set = np.delete(a, missing_dim, axis=1)
+    R_reduced = np.linalg.cholesky(existing_dim_sigma)
+    R_missing = np.linalg.cholesky(missing_dim_sigma)
+
+    a = train_data.dot(np.linalg.inv(R).T)
+    a_train_existing = np.delete(a, missing_dim, axis=1)
     a_train_missing = np.delete(a, existing_dim, axis=1)
-    a_test = damaged_data.dot(R_reduced_inv_T)
+    a_damaged = damaged_data.dot(np.linalg.inv(R_reduced).T)
 
     probabilities = np.array(
-        [np.array(custom_normal_pdf(a_test, mean=a_train, R=R_reduced)) for a_train in a_train_set])
+        [np.array(custom_normal_pdf(a_damaged, mean=a_train, R=R_reduced)) for a_train in a_train_existing])
 
     a_imputed_values = np.sum(a_train_missing * probabilities[:, np.newaxis], axis=0) / np.sum(probabilities)
 
-    imputed_values = a_imputed_values.dot(R_missing_T)
-
-    # !!!! imputed values need to be rebased !!!!
+    imputed_values = a_imputed_values.dot(R_missing.T)
 
     return imputed_values
 
