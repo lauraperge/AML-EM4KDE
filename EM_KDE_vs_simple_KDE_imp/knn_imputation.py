@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial import KDTree
 from scipy.io import loadmat
-from utils import remove_random_value
+from utils import remove_random_values
 import matplotlib.pyplot as plt
 
 def find_null(data):
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     full_data = np.concatenate([full_data, loadmat('../faithfull/faithful.mat')['X']], axis=1)
 
     full_part = np.array(full_data[:-10])
-    [damaged_part, removed_values] = remove_random_value(full_data[-10:])
+    [damaged_part, removed_values] = remove_random_values(full_data[-10:])
 
     damaged_data = np.append(damaged_part, full_part, axis=0)
 
