@@ -148,8 +148,8 @@ median_impute = np.array(median_impute)
 restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
 
-divergence = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) / removed_values])
-divergence_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) / removed_values])
+divergence = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) / removed_values]) * 100
+divergence_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) / removed_values]) * 100
 mse = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) ** 2])
 mse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) ** 2])
 
