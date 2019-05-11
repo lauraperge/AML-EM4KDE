@@ -115,6 +115,7 @@ def remove_random_value(data_array):
 
     def remove_random(item):
         size = round(random.random() * (dim - 2)) + 1
+        # size = 4
         idx = np.sort(np.unique(np.random.choice(range(dim), size=size, replace=False)))
         removed_dims = []
         for i in idx:
@@ -165,7 +166,9 @@ def nadaraya_watson_imputation(damaged_data, train_data, sigma):
     probabilities = np.array(
         [np.array(custom_normal_pdf(a_damaged, mean=a_train, R=R_reduced)) for a_train in a_train_existing])
 
-    a_imputed_values = np.sum(a_train_missing * probabilities[:, np.newaxis], axis=0) / np.sum(probabilities)
+    prob_sum = probabilities.sum() or 1  # to avoid dividing by zero
+
+    a_imputed_values = np.sum(a_train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
 
     imputed_values = a_imputed_values.dot(R_missing.T)
 
