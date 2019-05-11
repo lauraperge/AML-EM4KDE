@@ -1,8 +1,10 @@
 import numpy as np
 from scipy.spatial import KDTree
 from scipy.io import loadmat
-from utils import remove_random_values
+from utils import remove_random_values, remove_random_value
 import matplotlib.pyplot as plt
+from sklearn import preprocessing
+
 
 def find_null(data):
   """ Finds the indices of all missing values.
@@ -57,6 +59,8 @@ def knn_impute(data, k=3):
     ----------
     data: numpy.ndarray
         Data to impute.
+    k: int
+        number of neighbors
     Returns
     -------
     numpy.ndarray
@@ -72,7 +76,10 @@ def knn_impute(data, k=3):
     distances, indices = kdTree.query(data_corrected[datapoint_i], k=k+1)
     # Will always return itself in the first index. Delete it.
     distances, indices = distances[1:], indices[1:]
-    weights = distances/np.sum(distances)
+    if np.sum(distances) != 0:
+        weights = distances/np.sum(distances)
+    else:
+        weights = distances
     # Assign the weighted average of `k` nearest neighbors
     imputed_data[datapoint_i][missing_dim_i] = np.dot(weights, [data_corrected[ind][missing_dim_i] for ind in indices])
 
@@ -80,25 +87,33 @@ def knn_impute(data, k=3):
 
 if __name__ == '__main__':
     ## Load data
-    full_data = loadmat('../faithfull/faithful.mat')['X']
+    full_data = loadmat('../faithfull/wine.mat')['X']
+    full_data = preprocessing.normalize(full_data)
 
-    ## Testing with higher dimension data
-    np.random.shuffle(full_data)
-    full_data = np.concatenate([full_data, loadmat('../faithfull/faithful.mat')['X']], axis=1)
+    # full_data = loadmat('../faithfull/faithful.mat')['X']
+    # np.random.shuffle(full_data)
+    # full_data = np.concatenate([full_data, loadmat('../faithfull/faithful.mat')['X']], axis=1)
 
-    full_part = np.array(full_data[:-10])
-    [damaged_part, removed_values] = remove_random_values(full_data[-10:])
+    full_part = np.array(full_data[10:])
+    full_data_copy = np.copy(full_data)
+
+    [damaged_part, removed_values] = remove_random_values(full_data[:10])
 
     damaged_data = np.append(damaged_part, full_part, axis=0)
 
-    neighbors = np.arange(1,19,2)
+    neighbors = np.arange(1, 19, 2)
     avg_divergence = []
 
     for neighbor in neighbors:
         imputed_data = knn_impute(damaged_data, k=neighbor)
-        imputed_part = np.array(imputed_data[-10:])
-        imputed_values = [imputed_data.item(tuple(x)) for x in find_null(damaged_part)]
-        divergence = np.abs(removed_values - imputed_values) / removed_values
+        imputed_part = np.array(imputed_data[:10])
+        imputed_values = np.array([imputed_data.item(tuple(x)) for x in find_null(damaged_part)])
+        divergence = []
+        for i in range(len(removed_values)):
+            if removed_values[i] != 0:
+                divergence.append(np.abs(removed_values[i] - imputed_values[i]) / removed_values[i])
+            else:
+                divergence.append(np.abs(removed_values[i] - imputed_values[i]) / imputed_values[i])
         avg_divergence.append(np.average(divergence))
 
     plt.figure(2)
