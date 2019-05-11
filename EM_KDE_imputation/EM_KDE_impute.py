@@ -131,17 +131,12 @@ median_impute = np.array(median_impute)
 restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
 
-print(imputed_values)
-print(removed_values)
-
 divergence = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) / removed_values])
-print(divergence)
 divergence_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) / removed_values])
 mse = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) ** 2])
 mse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) ** 2])
 
 plt.figure(2)
-
 plt.plot(np.arange(len(divergence)), divergence, '-b', label='Error')
 plt.plot(np.arange(len(divergence_median)), divergence_median, '-r', label='Error median')
 leg = plt.legend()
@@ -150,7 +145,6 @@ plt.ylabel('Imputation error %')
 plt.show()
 
 plt.figure(3)
-
 plt.plot(np.arange(len(mse)), mse, '-b', label='MSE')
 plt.plot(np.arange(len(mse)), mse_median, '-r', label='MSE median')
 plt.legend()
