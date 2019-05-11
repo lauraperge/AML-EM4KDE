@@ -114,9 +114,12 @@ def remove_random_value(data_array):
     removed_values = []
 
     def remove_random(item):
-        i = round(random.random() * dim - 1)
-        removed_values.append(item[i])
-        item[i] = None
+        idx = np.random.choice(range(dim), size=2, replace=False)
+        removed_dims = []
+        for i in idx:
+            removed_dims.append(item[i])
+            item[i] = None
+        removed_values.append(removed_dims)
         return item
 
     damaged_data = np.array([remove_random(data) for data in data_array])
@@ -140,6 +143,42 @@ def conditional_expectation(mean, test, sigma, dim):
     m2 = np.delete(mean, dim, axis=0)
 
     return np.squeeze(m1 + S12.dot(S22_inv * (test - m2)))
+
+
+def nadaraya_watson_imputation(damaged_data, train_data, sigma):
+    print(damaged_data)
+    missing_dim = [idx for idx, value in enumerate(damaged_data) if np.isnan(value)]
+    existing_dim = [idx for idx, value in enumerate(damaged_data) if not np.isnan(value)]
+
+    damaged_data = damaged_data[np.ix_(existing_dim)]
+
+    # remove data of that dimension
+    reduced_sigma = sigma[np.ix_(existing_dim, existing_dim)]
+    misssing_sigma = sigma[np.ix_(missing_dim, missing_dim)]
+
+    # create transformed data
+    R_reduced = np.linalg.cholesky(reduced_sigma)
+    R_reduced_inv_T = np.linalg.inv(R_reduced).T
+
+    R_missing_T = np.linalg.cholesky(misssing_sigma).T
+
+    R = np.linalg.cholesky(sigma)
+    R_inv_T = np.linalg.inv(R).T
+    a = train_data.dot(R_inv_T)
+    a_train_set = np.delete(a, missing_dim, axis=1)
+    a_train_missing = np.delete(a, existing_dim, axis=1)
+    a_test = damaged_data.dot(R_reduced_inv_T)
+
+    probabilities = np.array(
+        [np.array(custom_normal_pdf(a_test, mean=a_train, R=R_reduced)) for a_train in a_train_set])
+
+    a_imputed_values = np.sum(a_train_missing * probabilities[:, np.newaxis], axis=0) / np.sum(probabilities)
+
+    imputed_values = a_imputed_values.dot(R_missing_T)
+
+    # !!!! imputed values need to be rebased !!!!
+
+    return imputed_values
 
 
 if __name__ == '__main__':
@@ -172,5 +211,3 @@ if __name__ == '__main__':
 
     for train in x_train:
         scipy_norm.append(multivariate_normal.pdf(x=x_test, mean=train, cov=sigma))
-
-    
