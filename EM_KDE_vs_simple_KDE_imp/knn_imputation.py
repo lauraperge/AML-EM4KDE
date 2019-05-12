@@ -85,6 +85,7 @@ def knn_impute(data, k=3):
 
   return imputed_data
 
+
 if __name__ == '__main__':
     ## Load data
     full_data = loadmat('../faithfull/wine.mat')['X']

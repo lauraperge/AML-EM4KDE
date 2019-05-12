@@ -184,6 +184,47 @@ def conditional_expectation(mean, test, sigma, dim):
 
     return np.squeeze(m1 + S12.dot(S22_inv * (test - m2)))
 
+def nadaraya_watson_imputation(damaged_data, train_data, sigma):
+    # get indexes of the missing and existing dimensions of the test data
+    missing_dim = [idx for idx, value in enumerate(damaged_data) if np.isnan(value)]
+    existing_dim = [idx for idx, value in enumerate(damaged_data) if not np.isnan(value)]
+
+    # Remove the placeholder 'nan' values from the damaged data
+    damaged_data = damaged_data[np.ix_(existing_dim)]
+
+    # create sigma values for the missing and existing dimensions
+    existing_dim_sigma = sigma[np.ix_(existing_dim, existing_dim)]
+    missing_dim_sigma = sigma[np.ix_(missing_dim, missing_dim)]
+
+    train_existing = np.delete(train_data, missing_dim, axis=1)
+    train_missing = np.delete(train_data, existing_dim, axis=1)
+
+    # # create transformed data
+    # R = np.linalg.cholesky(sigma)
+    # R_reduced = np.linalg.cholesky(existing_dim_sigma)
+    # R_missing = np.linalg.cholesky(missing_dim_sigma)
+    #
+    # a = train_data.dot(np.linalg.inv(R).T)
+    # a_train_existing = np.delete(a, missing_dim, axis=1)
+    # a_train_missing = np.delete(a, existing_dim, axis=1)
+    # a_damaged = damaged_data.dot(np.linalg.inv(R_reduced).T)
+    #
+    # probabilities = np.array(
+    #     [np.array(custom_normal_pdf(a_damaged, mean=a_train, R=R_reduced)) for a_train in a_train_existing])
+    #
+    # prob_sum = probabilities.sum() or 1  # to avoid dividing by zero
+    #
+    # a_imputed_values = np.sum(a_train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
+    #
+    # imputed_values = a_imputed_values.dot(R_missing.T)
+
+    probabilities = np.array(
+        [np.array(multivariate_normal.pdf(x=damaged_data, mean=train, cov=existing_dim_sigma)) for train in
+         train_existing])
+    prob_sum = probabilities.sum()
+    imputed_values = np.sum(train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
+
+    return imputed_values
 
 ##############################################################################
 # Diagonalize the given covariance matrix, returning the
