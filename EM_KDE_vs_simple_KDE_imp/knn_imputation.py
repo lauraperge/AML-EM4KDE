@@ -91,10 +91,6 @@ if __name__ == '__main__':
     full_data = loadmat('../faithfull/wine.mat')['X']
     full_data = preprocessing.normalize(full_data)
 
-    # full_data = loadmat('../faithfull/faithful.mat')['X']
-    # np.random.shuffle(full_data)
-    # full_data = np.concatenate([full_data, loadmat('../faithfull/faithful.mat')['X']], axis=1)
-
     full_part = np.array(full_data[10:])
     full_data_copy = np.copy(full_data)
 

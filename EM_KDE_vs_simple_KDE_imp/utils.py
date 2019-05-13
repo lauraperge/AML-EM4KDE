@@ -134,14 +134,34 @@ def custom_normal_pdf(a, mean, R):
     return np.squeeze(pdf)
 
 
+# def remove_random_value(data_array):
+#     num_data, dim = data_array.shape
+#     removed_values = []
+#
+#     def remove_random(item):
+#         i = int(round(random.random() * dim - 1))
+#         removed_values.append(item[i])
+#         item[i] = None
+#         return item
+#
+#     damaged_data = np.array([remove_random(data) for data in data_array])
+#     removed_values = np.array(removed_values)
+#
+#     return [damaged_data, removed_values]
+
 def remove_random_value(data_array):
     num_data, dim = data_array.shape
     removed_values = []
 
     def remove_random(item):
-        i = int(round(random.random() * dim - 1))
-        removed_values.append(item[i])
-        item[i] = None
+        size = int(round(random.random() * (dim - 2)) + 1)
+        # size = 4
+        idx = np.sort(np.unique(np.random.choice(range(dim), size=size, replace=False)))
+        removed_dims = []
+        for i in idx:
+            removed_dims.append(item[i])
+            item[i] = None
+        removed_values.append(removed_dims)
         return item
 
     damaged_data = np.array([remove_random(data) for data in data_array])
@@ -149,23 +169,23 @@ def remove_random_value(data_array):
 
     return [damaged_data, removed_values]
 
-def remove_random_values(data_array):
-    num_data, dim = data_array.shape
-    removed_values = []
-
-    def remove_random(item):
-        # sample from the range(dim)=[0,1,2, ...dim] list random element(s) (1 or 2 or ...dim-2 number of elements)
-        dims_to_remove = random.sample(range(dim), random.randint(1, dim-2))
-        dims_to_remove.sort()
-        for dim_to_remove in dims_to_remove:
-            removed_values.append(item[dim_to_remove])
-            item[dim_to_remove] = None
-        return item
-
-    damaged_data = np.array([remove_random(data) for data in data_array])
-    removed_values = np.array(removed_values)
-
-    return [damaged_data, removed_values]
+# def remove_random_values(data_array):
+#     num_data, dim = data_array.shape
+#     removed_values = []
+#
+#     def remove_random(item):
+#         # sample from the range(dim)=[0,1,2, ...dim] list random element(s) (1 or 2 or ...dim-2 number of elements)
+#         dims_to_remove = random.sample(range(dim), random.randint(1, dim-2))
+#         dims_to_remove.sort()
+#         for dim_to_remove in dims_to_remove:
+#             removed_values.append(item[dim_to_remove])
+#             item[dim_to_remove] = None
+#         return item
+# 
+#     damaged_data = np.array([remove_random(data) for data in data_array])
+#     removed_values = np.array(removed_values)
+#
+#     return [damaged_data, removed_values]
 
 
 def remove_dim(sigma, dim):

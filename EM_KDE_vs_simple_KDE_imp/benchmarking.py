@@ -108,13 +108,16 @@ sigma_S = np.array([[0.32581447, 0., 0., 0., 0., 0.,
 
 # Load data
 raw_data = preprocessing.normalize(loadmat('../faithfull/wine.mat')['X'])
-
+print(raw_data.shape)
 # Remove attributes randomly
-NUM_TEST = 20
+NUM_TEST = 100
 raw_data = raw_data[:1000]  # taking only a small part for testing
 data = np.array(raw_data[:-NUM_TEST])
 [damaged_data, removed_values] = remove_random_value(raw_data[-NUM_TEST:])
 medians = np.median(data, axis=0)  # for baseline
+
+num_removed_value = [len(removed_attr) for removed_attr in removed_values]
+print('The number of randomly removed attributes: {0}'.format(np.sum(num_removed_value)))
 
 imputed_values = []
 # restored_data = []
@@ -129,14 +132,14 @@ for benchmark_case in benchmarks:
     for test_data in damaged_data:
         missing_dim = [idx for idx, value in enumerate(test_data) if np.isnan(value)]
 
-        imputed_value = nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)[0]
+        imputed_value = nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)
 
         # restored_element = np.insert(test_data, missing_dim, imputed_value)
         # _restored_data.append(restored_element)
         _imputed_values.append(imputed_value)
 
         if do_median:
-            median_impute.append(medians[missing_dim][0])
+            median_impute.append(medians[missing_dim])
 
     do_median = False
     # _restored_data = np.array(_restored_data)
@@ -156,6 +159,11 @@ mse_F = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_valu
 mse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[1]) ** 2])
 mse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[2]) ** 2])
 mse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) ** 2])
+
+rmse_F = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[0])])
+rmse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[1])])
+rmse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[2])])
+rmse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute)])
 
 
 
@@ -177,4 +185,25 @@ plt.plot(np.arange(len(mse_median)), mse_median, '-r', label='MSE median')
 plt.legend()
 plt.xlabel('Index')
 plt.ylabel('Imputation error MSE')
+plt.show()
+
+plt.figure(4)
+plt.plot(np.arange(len(rmse_F)), rmse_F, '-b', label='RMSE (F-Kernel)')
+plt.plot(np.arange(len(rmse_D)), rmse_D, '-g', label='RMSE (D-Kernel)')
+plt.plot(np.arange(len(rmse_S)), rmse_S, '-y', label='RMSE (S-Kernel)')
+plt.plot(np.arange(len(rmse_median)), rmse_median, '-r', label='RMSE median')
+plt.legend()
+plt.xlabel('Index')
+plt.ylabel('Imputation error RMSE')
+plt.show()
+
+
+boxplot_data = [mse_F, mse_D, mse_S, mse_median]
+plt.figure(5)
+plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median'], patch_artist=True)
+plt.show()
+
+boxplot_data = [rmse_F, rmse_D, rmse_S, rmse_median]
+plt.figure(6)
+plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median'], patch_artist=True)
 plt.show()
