@@ -5,8 +5,9 @@ from sklearn import model_selection, preprocessing
 from utils import e_step, m_step, calculate_log_likelihood, is_converged
 from plot import plot_kde
 
-@profile
-def EM_KDE(data_source):
+
+# @profile
+def em_kde(data_source):
     # Load data
     # Taking only small part due to memory limitations
     if data_source == 'wine':
@@ -84,4 +85,4 @@ if __name__ == '__main__':
     data_source = 'faithful'
     # data_source = 'wine'
 
-    EM_KDE(data_source)
+    em_kde(data_source)

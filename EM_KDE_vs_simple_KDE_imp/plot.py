@@ -11,8 +11,8 @@ def plot_kde(data, sigma, res=0.1):
     x_range = np.arange(min_x - border_x, max_x + border_x, res)
     y_range = np.arange(min_y - border_y, max_y + border_y, res)
     z = evaluate_probability(x_range, y_range, data, sigma)
-    h = plt.contourf(x_range, y_range, z)
-    plt.colorbar()
+    plt.contourf(x_range, y_range, z)
+    plt.scatter(data[:, 0], data[:, 1], c='red', s=10, alpha=0.6)
     plt.show()
 
 
@@ -29,19 +29,12 @@ def evaluate_probability(x_range, y_range, data, sigma):
 
 
 if __name__ == "__main__":
-    # JUST TESTING
     data = np.array([
         [-3, -4],
         [1, 1],
         [-2, 1],
         [2, -2],
         [-3, 0]
-        # [0,0],
-        # [0,1],
-        # [1,0],
-        # [0,-1],
-        # [-1,0],
-        # [3,3]
     ])
     sigma = np.array([[2, -0.3], [-0.3, 0.5]])
 

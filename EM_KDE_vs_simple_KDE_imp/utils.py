@@ -1,9 +1,5 @@
 import random
-
-from scipy.linalg import eig
-from scipy.io import loadmat
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 
 
@@ -35,10 +31,10 @@ def m_step(x_test, x_train, responsibility):
             # _sigmas[n] = (responsibility[k, n] * delta.T).dot(delta)
 
             # Use this line to reproduce D-Kernel
-            # _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test-train)**2)
+            _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test-train)**2)
 
             # Use this line to reproduce S-Kernel
-            _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
+            # _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
 
         sigmas[k] = _sigmas.mean(axis=0)
 
@@ -53,7 +49,6 @@ def calculate_log_likelihood(x_test, x_train, R):
     for j, test in enumerate(x_test):
         for k, train in enumerate(x_train):
             L[j, k] = pi * custom_normal_pdf(test, mean=train, R=R)
-            # L[j, k] = pi * multivariate_normal.pdf(test, mean=train, cov=R)
     return L.sum()
 
 
@@ -118,8 +113,6 @@ def custom_normal_pdf(a, mean, R):
             a = a[:, np.newaxis]
         else:
             a = a[np.newaxis, :]
-    # pdf = (1 / PI2R) * (np.exp(- 0.5 * (np.sum(np.power(a, 2), 1) - 2 *
-    #                                     a.dot(mean.T) + np.sum(np.power(mean, 2)))))
 
     distance = a - mean
     pdf = (1 / PI2R) * np.exp(- 0.5 * (distance.dot(distance.T)))
@@ -155,7 +148,6 @@ def remove_dim(sigma, dim):
 
 
 def conditional_expectation(mean, test, sigma, dim):
-    # S11 = remove_dim(sigma, dim)
     S22_inv = 1 / sigma[dim][dim]
     S12 = np.delete(sigma[dim], dim, axis=0)[np.newaxis].T
 
@@ -163,6 +155,7 @@ def conditional_expectation(mean, test, sigma, dim):
     m2 = np.delete(mean, dim, axis=0)
 
     return np.squeeze(m1 + S12.dot(S22_inv * (test - m2)))
+
 
 def nadaraya_watson_imputation(damaged_data, train_data, sigma):
     # get indexes of the missing and existing dimensions of the test data
@@ -174,29 +167,9 @@ def nadaraya_watson_imputation(damaged_data, train_data, sigma):
 
     # create sigma values for the missing and existing dimensions
     existing_dim_sigma = sigma[np.ix_(existing_dim, existing_dim)]
-    missing_dim_sigma = sigma[np.ix_(missing_dim, missing_dim)]
 
     train_existing = np.delete(train_data, missing_dim, axis=1)
     train_missing = np.delete(train_data, existing_dim, axis=1)
-
-    # # create transformed data
-    # R = np.linalg.cholesky(sigma)
-    # R_reduced = np.linalg.cholesky(existing_dim_sigma)
-    # R_missing = np.linalg.cholesky(missing_dim_sigma)
-    #
-    # a = train_data.dot(np.linalg.inv(R).T)
-    # a_train_existing = np.delete(a, missing_dim, axis=1)
-    # a_train_missing = np.delete(a, existing_dim, axis=1)
-    # a_damaged = damaged_data.dot(np.linalg.inv(R_reduced).T)
-    #
-    # probabilities = np.array(
-    #     [np.array(custom_normal_pdf(a_damaged, mean=a_train, R=R_reduced)) for a_train in a_train_existing])
-    #
-    # prob_sum = probabilities.sum() or 1  # to avoid dividing by zero
-    #
-    # a_imputed_values = np.sum(a_train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
-    #
-    # imputed_values = a_imputed_values.dot(R_missing.T)
 
     probabilities = np.array(
         [np.array(multivariate_normal.pdf(x=damaged_data, mean=train, cov=existing_dim_sigma)) for train in
@@ -205,68 +178,6 @@ def nadaraya_watson_imputation(damaged_data, train_data, sigma):
     imputed_values = np.sum(train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
 
     return imputed_values
-
-# ##############################################################################
-# # Diagonalize the given covariance matrix, returning the
-# # diagonal matrix W, and the unitary matrix V such that
-# #  V * U * V^{-1} = W
-#
-# def diagonalize(cov_matrix):
-#     """Diagonalize a given covariance matrix.
-#
-#         Parameters
-#         ----------------------------------
-#             cov_matrix : array_like
-#                 A covariance matrix where each element contains a non-zero value
-#
-#         Returns
-#         ---------------------------------
-#              matrix_W : array_like
-#                 Reduced covariance matrix where non-zero elements are located along the main axis
-#                 sigma = [[lambda1, 0, 0],[0, lambda2, 0],[0, 0, lambda3]]
-#
-#         """
-#     (eig_vals, eig_vecs) = eig(cov_matrix)
-#
-#     # # Create the diagonalization matrix V
-#     # matrix_V = np.array(eig_vecs)
-#     # # Multiply V^{-1} * U * V to diagonalize
-#     # matrix_W = np.dot(np.linalg.inv(matrix_V),np.dot(cov_matrix, matrix_V))
-#
-#     # Construct the diagonalized matrix that we want
-#     matrix_diag = np.array(np.eye(len(cov_matrix)))
-#     for i in range(len(eig_vals)):
-#         matrix_diag[(i, i)] = eig_vals[i].real
-#
-#     # print(matrix_W, matrix_diag)
-#
-#     return matrix_diag
-#
-#
-# def scalarize(cov_matrix):
-#     """Acalarize a given covariance matrix.
-#
-#         Parameters
-#         ----------------------------------
-#             cov_matrix : array_like
-#                 A covariance matrix where each element contains a non-zero value
-#
-#         Returns
-#         ---------------------------------
-#              matrix_W : array_like
-#                 Reduced covariance matrix where non-zero elements are the same and they are located along the main axis
-#                 sigma = [[lambda, 0, 0],[0, lambda, 0],[0, 0, lambda]]
-#
-#
-#         """
-#     (eig_vals, eig_vecs) = eig(cov_matrix)
-#
-#     # Construct the scalarized matrix that we want
-#     matrix_diag = np.array(np.eye(len(cov_matrix)))
-#     for i in range(len(eig_vals)):
-#         matrix_diag[(i, i)] = eig_vals[0].real
-#
-#     return matrix_diag
 
 
 if __name__ == '__main__':
