@@ -30,24 +30,18 @@ def m_step(x_test, x_train, responsibility):
     for k, train in enumerate(x_train):
         _sigmas = np.zeros([num_test, dim, dim])
         for n, test in enumerate(x_test):
-            # Use these two lines to reproduce F-kernel, D-kernel_v1 and S-Kernel_v1
+            # Use these two lines to reproduce F-kernel
             # delta = (test - train)[np.newaxis]
             # _sigmas[n] = (responsibility[k, n] * delta.T).dot(delta)
 
-            # Use this line to reproduce D-Kernel_v2
-            _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test-train)**2)
+            # Use this line to reproduce D-Kernel
+            # _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test-train)**2)
 
-            # Use this line to reproduce S-Kernel_v2
-            # _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
+            # Use this line to reproduce S-Kernel
+            _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
 
-        # Use this line to reproduce F-kernel, D-kernel_v2 and S-Kernel_v2
         sigmas[k] = _sigmas.mean(axis=0)
 
-        # Use this line to reproduce D-Kernel_v1
-        # sigmas[k] = diagonalize(_sigmas.mean(axis=0))
-
-        # Use this line to reproduce S-Kernel_v1
-        # sigmas[k] = scalarize(_sigmas.mean(axis=0))
     return sigmas
 
 
@@ -90,7 +84,6 @@ def is_converged(log_likelihood, epsilon):
         return False
 
 
-## custom mv. norm pdf
 def custom_normal_pdf(a, mean, R):
     """Multivariate Normal (Gaussian) probability density function with custom implementation. 
  
@@ -134,21 +127,6 @@ def custom_normal_pdf(a, mean, R):
     return np.squeeze(pdf)
 
 
-# def remove_random_value(data_array):
-#     num_data, dim = data_array.shape
-#     removed_values = []
-#
-#     def remove_random(item):
-#         i = int(round(random.random() * dim - 1))
-#         removed_values.append(item[i])
-#         item[i] = None
-#         return item
-#
-#     damaged_data = np.array([remove_random(data) for data in data_array])
-#     removed_values = np.array(removed_values)
-#
-#     return [damaged_data, removed_values]
-
 def remove_random_value(data_array):
     num_data, dim = data_array.shape
     removed_values = []
@@ -168,24 +146,6 @@ def remove_random_value(data_array):
     removed_values = np.array(removed_values)
 
     return [damaged_data, removed_values]
-
-# def remove_random_values(data_array):
-#     num_data, dim = data_array.shape
-#     removed_values = []
-#
-#     def remove_random(item):
-#         # sample from the range(dim)=[0,1,2, ...dim] list random element(s) (1 or 2 or ...dim-2 number of elements)
-#         dims_to_remove = random.sample(range(dim), random.randint(1, dim-2))
-#         dims_to_remove.sort()
-#         for dim_to_remove in dims_to_remove:
-#             removed_values.append(item[dim_to_remove])
-#             item[dim_to_remove] = None
-#         return item
-# 
-#     damaged_data = np.array([remove_random(data) for data in data_array])
-#     removed_values = np.array(removed_values)
-#
-#     return [damaged_data, removed_values]
 
 
 def remove_dim(sigma, dim):
@@ -246,67 +206,67 @@ def nadaraya_watson_imputation(damaged_data, train_data, sigma):
 
     return imputed_values
 
-##############################################################################
-# Diagonalize the given covariance matrix, returning the
-# diagonal matrix W, and the unitary matrix V such that
-#  V * U * V^{-1} = W
-
-def diagonalize(cov_matrix):
-    """Diagonalize a given covariance matrix.
-
-        Parameters
-        ----------------------------------
-            cov_matrix : array_like
-                A covariance matrix where each element contains a non-zero value
-
-        Returns
-        ---------------------------------
-             matrix_W : array_like
-                Reduced covariance matrix where non-zero elements are located along the main axis
-                sigma = [[lambda1, 0, 0],[0, lambda2, 0],[0, 0, lambda3]]
-
-        """
-    (eig_vals, eig_vecs) = eig(cov_matrix)
-
-    # # Create the diagonalization matrix V
-    # matrix_V = np.array(eig_vecs)
-    # # Multiply V^{-1} * U * V to diagonalize
-    # matrix_W = np.dot(np.linalg.inv(matrix_V),np.dot(cov_matrix, matrix_V))
-
-    # Construct the diagonalized matrix that we want
-    matrix_diag = np.array(np.eye(len(cov_matrix)))
-    for i in range(len(eig_vals)):
-        matrix_diag[(i, i)] = eig_vals[i].real
-
-    # print(matrix_W, matrix_diag)
-
-    return matrix_diag
-
-
-def scalarize(cov_matrix):
-    """Acalarize a given covariance matrix.
-
-        Parameters
-        ----------------------------------
-            cov_matrix : array_like
-                A covariance matrix where each element contains a non-zero value
-
-        Returns
-        ---------------------------------
-             matrix_W : array_like
-                Reduced covariance matrix where non-zero elements are the same and they are located along the main axis
-                sigma = [[lambda, 0, 0],[0, lambda, 0],[0, 0, lambda]]
-
-
-        """
-    (eig_vals, eig_vecs) = eig(cov_matrix)
-
-    # Construct the scalarized matrix that we want
-    matrix_diag = np.array(np.eye(len(cov_matrix)))
-    for i in range(len(eig_vals)):
-        matrix_diag[(i, i)] = eig_vals[0].real
-
-    return matrix_diag
+# ##############################################################################
+# # Diagonalize the given covariance matrix, returning the
+# # diagonal matrix W, and the unitary matrix V such that
+# #  V * U * V^{-1} = W
+#
+# def diagonalize(cov_matrix):
+#     """Diagonalize a given covariance matrix.
+#
+#         Parameters
+#         ----------------------------------
+#             cov_matrix : array_like
+#                 A covariance matrix where each element contains a non-zero value
+#
+#         Returns
+#         ---------------------------------
+#              matrix_W : array_like
+#                 Reduced covariance matrix where non-zero elements are located along the main axis
+#                 sigma = [[lambda1, 0, 0],[0, lambda2, 0],[0, 0, lambda3]]
+#
+#         """
+#     (eig_vals, eig_vecs) = eig(cov_matrix)
+#
+#     # # Create the diagonalization matrix V
+#     # matrix_V = np.array(eig_vecs)
+#     # # Multiply V^{-1} * U * V to diagonalize
+#     # matrix_W = np.dot(np.linalg.inv(matrix_V),np.dot(cov_matrix, matrix_V))
+#
+#     # Construct the diagonalized matrix that we want
+#     matrix_diag = np.array(np.eye(len(cov_matrix)))
+#     for i in range(len(eig_vals)):
+#         matrix_diag[(i, i)] = eig_vals[i].real
+#
+#     # print(matrix_W, matrix_diag)
+#
+#     return matrix_diag
+#
+#
+# def scalarize(cov_matrix):
+#     """Acalarize a given covariance matrix.
+#
+#         Parameters
+#         ----------------------------------
+#             cov_matrix : array_like
+#                 A covariance matrix where each element contains a non-zero value
+#
+#         Returns
+#         ---------------------------------
+#              matrix_W : array_like
+#                 Reduced covariance matrix where non-zero elements are the same and they are located along the main axis
+#                 sigma = [[lambda, 0, 0],[0, lambda, 0],[0, 0, lambda]]
+#
+#
+#         """
+#     (eig_vals, eig_vecs) = eig(cov_matrix)
+#
+#     # Construct the scalarized matrix that we want
+#     matrix_diag = np.array(np.eye(len(cov_matrix)))
+#     for i in range(len(eig_vals)):
+#         matrix_diag[(i, i)] = eig_vals[0].real
+#
+#     return matrix_diag
 
 
 if __name__ == '__main__':

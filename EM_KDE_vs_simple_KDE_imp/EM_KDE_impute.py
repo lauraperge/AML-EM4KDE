@@ -6,15 +6,17 @@ from utils import e_step, m_step, calculate_log_likelihood, is_converged
 from plot import plot_kde
 
 @profile
-def EM_KDE():
-    ## Load data
-    raw_data = preprocessing.scale(loadmat('../faithfull/wine.mat')['X'])
-
+def EM_KDE(data_source):
+    # Load data
     # Taking only small part due to memory limitations
-    # Also remove the first 100 what we damage later on purpose
-    NUM_TEST = 100
-    raw_data = raw_data[:1000]
-    data = np.array(raw_data[:-NUM_TEST])
+    if data_source == 'wine':
+        raw_data = preprocessing.scale(loadmat('../faithfull/wine.mat')['X'][:1000])
+        # Also remove the first 100 what we damage later on purpose
+        NUM_TEST = 100
+        data = np.array(raw_data[:-NUM_TEST])
+    else:
+        data = preprocessing.scale(loadmat('../faithfull/faithful.mat')['X'])
+
     num_data, dim = data.shape
 
     # K-fold cross validation
@@ -22,7 +24,7 @@ def EM_KDE():
     CV = model_selection.KFold(n_splits=K, shuffle=False)
 
     ## Loop until you're happy
-    epsilon = 2
+    epsilon = 1e-3
     sigma = np.eye(dim)
     log_likelihood = np.asarray([])
     i = 0
@@ -73,6 +75,13 @@ def EM_KDE():
     plt.ylabel('Log-likelihood')
     plt.show()
 
+    if data_source == 'faithful':
+        plot_kde(data, sigma, 0.1)
+
 
 if __name__ == '__main__':
-    EM_KDE()
+
+    data_source = 'faithful'
+    # data_source = 'wine'
+
+    EM_KDE(data_source)

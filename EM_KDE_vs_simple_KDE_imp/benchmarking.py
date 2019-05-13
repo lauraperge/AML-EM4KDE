@@ -108,11 +108,11 @@ sigma_S = np.array([[0.32581447, 0., 0., 0., 0., 0.,
                      0., 0., 0., 0., 0., 0.32581447]])
 
 # Load data
-raw_data = preprocessing.scale(loadmat('../faithfull/wine.mat')['X'])
+# Taking only a small part for testing
+raw_data = preprocessing.scale(loadmat('../faithfull/wine.mat')['X'][:1000])
 
 # Remove attributes randomly
 NUM_TEST = 100
-raw_data = raw_data[:1000]  # taking only a small part for testing
 data = np.array(raw_data[:-NUM_TEST])
 [damaged_data, removed_values] = remove_random_value(raw_data[-NUM_TEST:])
 medians = np.median(data, axis=0)  # for baseline
