@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn import preprocessing
 from scipy.io import loadmat
-from utils import remove_random_values, remove_random_value, nadaraya_watson_imputation
+from utils import remove_random_value, nadaraya_watson_imputation
+from knn_imputation import knn_impute, find_null
 import matplotlib.pyplot as plt
 
 # Sigma for F-Kernel
@@ -107,8 +108,8 @@ sigma_S = np.array([[0.32581447, 0., 0., 0., 0., 0.,
                      0., 0., 0., 0., 0., 0.32581447]])
 
 # Load data
-raw_data = preprocessing.normalize(loadmat('../faithfull/wine.mat')['X'])
-print(raw_data.shape)
+raw_data = preprocessing.scale(loadmat('../faithfull/wine.mat')['X'])
+
 # Remove attributes randomly
 NUM_TEST = 100
 raw_data = raw_data[:1000]  # taking only a small part for testing
@@ -116,45 +117,68 @@ data = np.array(raw_data[:-NUM_TEST])
 [damaged_data, removed_values] = remove_random_value(raw_data[-NUM_TEST:])
 medians = np.median(data, axis=0)  # for baseline
 
-num_removed_value = [len(removed_attr) for removed_attr in removed_values]
-print('The number of randomly removed attributes: {0}'.format(np.sum(num_removed_value)))
+# Reformat removed_values for the KNN imputation
+flattened_removed_values = [y for x in removed_values for y in x]
 
+# Information
+print('{0} attributes were removed from the first {1} data point.'.format(len(flattened_removed_values), NUM_TEST))
+
+# Storage for benchmarking results
 imputed_values = []
-# restored_data = []
 median_impute = []
 benchmarks = [sigma_F, sigma_D, sigma_S]
 do_median = True
 
+# Benchmark the performance of EM_KDE with different kernels
+print('Benchmarking different kernels...')
 for benchmark_case in benchmarks:
     sigma = benchmark_case
     _imputed_values = []
-    # _restored_data = []
     for test_data in damaged_data:
-        missing_dim = [idx for idx, value in enumerate(test_data) if np.isnan(value)]
-
         imputed_value = nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)
-
-        # restored_element = np.insert(test_data, missing_dim, imputed_value)
-        # _restored_data.append(restored_element)
         _imputed_values.append(imputed_value)
 
         if do_median:
+            missing_dim = [idx for idx, value in enumerate(test_data) if np.isnan(value)]
             median_impute.append(medians[missing_dim])
 
     do_median = False
-    # _restored_data = np.array(_restored_data)
     _imputed_values = np.array(_imputed_values)
-    # restored_data.append(_restored_data)
     imputed_values.append(_imputed_values)
 
 median_impute = np.array(median_impute)
-# restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
 
-divergence_F = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[0]) / removed_values]) * 100
-divergence_D = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[1]) / removed_values]) * 100
-divergence_S = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[2]) / removed_values]) * 100
-divergence_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) / removed_values]) * 100
+# Benchmark imputation with KNN method
+print('Benchmarking KNN imputation...')
+damaged_data_set = np.append(damaged_data, data, axis=0)
+neighbors = np.arange(1, 109, 2)
+avg_mse = []
+best_neighbor_avg_mse = 100
+best_neighbor_number = 0
+best_neighbor_mse = []
+best_neighbor_rmse = []
+for neighbor in neighbors:
+    imputed_data = knn_impute(damaged_data_set, k=neighbor)
+    imputed_values_knn = np.array([imputed_data.item(tuple(x)) for x in find_null(damaged_data)])
+    mse_knn = np.array(np.abs(flattened_removed_values - imputed_values_knn) ** 2)
+    rmse_knn = np.array(np.abs(flattened_removed_values - imputed_values_knn))
+    avg_mse.append(np.average(mse_knn))
+    if np.average(mse_knn) < best_neighbor_avg_mse:
+        best_neighbor_avg_mse = np.average(mse_knn)
+        best_neighbor_mse = mse_knn
+        best_neighbor_rmse = rmse_knn
+        best_neighbor_number = neighbor
+
+print('The best number of neighbor to use is {0}'.format(best_neighbor_number))
+
+# Results
+plt.figure(2)
+plt.plot(neighbors, avg_mse)
+plt.xlabel('Number of neighbors')
+plt.ylabel('Average MSE error')
+plt.show()
+
 mse_F = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[0]) ** 2])
 mse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[1]) ** 2])
 mse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[2]) ** 2])
@@ -165,45 +189,37 @@ rmse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_val
 rmse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[2])])
 rmse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute)])
 
-
-
-plt.figure(2)
-plt.plot(np.arange(len(divergence_F)), divergence_F, '-b', label='Error (F-Kernel)')
-plt.plot(np.arange(len(divergence_D)), divergence_D, '-g', label='Error (D-Kernel)')
-plt.plot(np.arange(len(divergence_S)), divergence_S, '-y', label='Error (S-Kernel)')
-plt.plot(np.arange(len(divergence_median)), divergence_median, '-r', label='Error median')
-leg = plt.legend()
-plt.xlabel('Index')
-plt.ylabel('Imputation error %')
-plt.show()
-
 plt.figure(3)
-plt.plot(np.arange(len(mse_F)), mse_F, '-b', label='MSE (F-Kernel)')
-plt.plot(np.arange(len(mse_D)), mse_D, '-g', label='MSE (D-Kernel)')
 plt.plot(np.arange(len(mse_S)), mse_S, '-y', label='MSE (S-Kernel)')
-plt.plot(np.arange(len(mse_median)), mse_median, '-r', label='MSE median')
+plt.plot(np.arange(len(mse_D)), mse_D, '-r', label='MSE (D-Kernel)')
+plt.plot(np.arange(len(mse_F)), mse_F, '-b', label='MSE (F-Kernel)')
+# plt.plot(np.arange(len(mse_median)), mse_median, '-r', label='MSE median')
+# plt.plot(np.arange(len(best_neighbor_mse)), best_neighbor_mse, '-m', label='MSE KNN ({0})'.format(best_neighbor_number))
 plt.legend()
-plt.xlabel('Index')
-plt.ylabel('Imputation error MSE')
+plt.xlabel('Index of damaged observation')
+plt.ylabel('Imputation MSE')
 plt.show()
 
 plt.figure(4)
-plt.plot(np.arange(len(rmse_F)), rmse_F, '-b', label='RMSE (F-Kernel)')
-plt.plot(np.arange(len(rmse_D)), rmse_D, '-g', label='RMSE (D-Kernel)')
 plt.plot(np.arange(len(rmse_S)), rmse_S, '-y', label='RMSE (S-Kernel)')
-plt.plot(np.arange(len(rmse_median)), rmse_median, '-r', label='RMSE median')
+plt.plot(np.arange(len(rmse_D)), rmse_D, '-r', label='RMSE (D-Kernel)')
+plt.plot(np.arange(len(rmse_F)), rmse_F, '-b', label='RMSE (F-Kernel)')
+# plt.plot(np.arange(len(rmse_median)), rmse_median, '-r', label='RMSE median')
+# plt.plot(np.arange(len(best_neighbor_rmse)), best_neighbor_rmse, '-m', label='MSE KNN ({0})'.format(best_neighbor_number))
 plt.legend()
-plt.xlabel('Index')
-plt.ylabel('Imputation error RMSE')
+plt.xlabel('Index of damaged observation')
+plt.ylabel('Imputation RMSE')
 plt.show()
 
 
-boxplot_data = [mse_F, mse_D, mse_S, mse_median]
+boxplot_data = [mse_F, mse_D, mse_S, mse_median, best_neighbor_mse]
 plt.figure(5)
-plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median'], patch_artist=True)
+plt.title('Imputation MSE')
+plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median', 'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
 plt.show()
 
-boxplot_data = [rmse_F, rmse_D, rmse_S, rmse_median]
+boxplot_data = [rmse_F, rmse_D, rmse_S, rmse_median, best_neighbor_rmse]
 plt.figure(6)
-plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median'], patch_artist=True)
+plt.title('Imputation RMSE')
+plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median', 'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
 plt.show()

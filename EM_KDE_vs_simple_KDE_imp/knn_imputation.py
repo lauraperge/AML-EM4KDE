@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial import KDTree
 from scipy.io import loadmat
-from utils import remove_random_values, remove_random_value
+from utils import remove_random_value
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
 
