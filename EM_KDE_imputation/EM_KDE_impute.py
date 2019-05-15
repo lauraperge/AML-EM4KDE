@@ -19,7 +19,7 @@ medians = np.median(data, axis=0)  # for baseline
 
 num_data, dim = data.shape
 
-# # K-fold cross validation
+# K-fold cross validation
 # K = num_data
 # CV = model_selection.KFold(n_splits=K, shuffle=False)
 #
@@ -171,4 +171,6 @@ plt.xlabel('Index')
 plt.ylabel('Imputation error MSE')
 plt.show()
 
-# plot_kde(data, sigma, 0.1)
+print(f'Median imputation error: {round(divergence_median.mean())}%')
+print(f'Nadaraya-Watson imputation error: {round(divergence.mean())}%')
+print(f'Improved Nadaraya-Watson imputation error: {round(improved_divergence.mean())}%')

@@ -116,8 +116,7 @@ def remove_random_value(data_array):
     def remove_random(item):
         size = round(random.random() * (dim - 2)) + 1
         # size = 4
-        # idx = np.sort(np.unique(np.random.choice(range(dim), size=size, replace=False)))
-        idx = [0, 1, 2]
+        idx = np.sort(np.unique(np.random.choice(range(dim), size=size, replace=False)))
         removed_dims = []
         for i in idx:
             removed_dims.append(item[i])
@@ -132,7 +131,6 @@ def remove_random_value(data_array):
 
 
 def conditional_expectation(test, mean, sigma, existing_dim, missing_dim):
-    # S11 = remove_dim(sigma, dim)
     S22_inv = np.linalg.inv(sigma[np.ix_(existing_dim, existing_dim)])
     S12 = sigma[np.ix_(missing_dim, existing_dim)]
 
