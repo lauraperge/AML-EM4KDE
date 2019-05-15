@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn import preprocessing
 from scipy.io import loadmat
-from utils import remove_random_value, nadaraya_watson_imputation
-from knn_imputation import knn_impute, find_null
+from EM_KDE_vs_simple_KDE_imp.utils import remove_random_value, nadaraya_watson_imputation
+from EM_KDE_vs_simple_KDE_imp.knn_imputation import knn_impute, find_null
 import matplotlib.pyplot as plt
 
 # Sigma for F-Kernel

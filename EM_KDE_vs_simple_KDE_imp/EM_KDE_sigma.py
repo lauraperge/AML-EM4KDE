@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from sklearn import model_selection, preprocessing
-from utils import e_step, m_step, calculate_log_likelihood, is_converged
-from plot import plot_kde
+from EM_KDE_vs_simple_KDE_imp.utils import e_step, m_step, calculate_log_likelihood, is_converged
+from EM_KDE_vs_simple_KDE_imp.plot import plot_kde
 
 
 # @profile
@@ -81,7 +81,6 @@ def em_kde(data_source):
 
 
 if __name__ == '__main__':
-
     data_source = 'faithful'
     # data_source = 'wine'
 

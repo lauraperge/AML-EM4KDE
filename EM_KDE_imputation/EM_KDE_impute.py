@@ -2,31 +2,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from sklearn import model_selection, preprocessing
-from sklearn.metrics import mean_squared_error
 
 from EM_KDE_imputation.utils import remove_random_value, conditional_expectation, e_step, m_step, \
-    calculate_log_likelihood, is_converged, nadaraya_watson_imputation
+    calculate_log_likelihood, is_converged, nadaraya_watson_imputation, improved_nadaraya_watson_imputation
 from EM_KDE_imputation.plot import plot_kde
 
 ## Load data
-raw_data = preprocessing.normalize(loadmat('../faithfull/wine.mat')['X'])
-
-## Real world data (may make sense to crop end, since it's quite big)
-# data = np.genfromtxt('../data/winequality-white.csv', delimiter=';')[1:,:250]
-
-# ## Testing with higher dimension data
-# np.random.shuffle(raw_data)
-# raw_data = np.concatenate([raw_data, loadmat('../faithfull/faithful.mat')['X']], axis=1)
+raw_data = loadmat('../faithfull/wine.mat')['X']
 
 NUM_TEST = 20
 
-raw_data = raw_data[:1000]  # taking only a small part for testing
+raw_data = preprocessing.scale(raw_data[:(1000 + NUM_TEST)])  # taking only a small part for testing
 data = np.array(raw_data[:-NUM_TEST])
 [damaged_data, removed_values] = remove_random_value(raw_data[-NUM_TEST:])
 medians = np.median(data, axis=0)  # for baseline
 
 num_data, dim = data.shape
-#
+
 # # K-fold cross validation
 # K = num_data
 # CV = model_selection.KFold(n_splits=K, shuffle=False)
@@ -83,53 +75,53 @@ num_data, dim = data.shape
 # plt.ylabel('Log-likelihood')
 # plt.show()
 
-#
 # sigma = np.array([[4.28747436e-02, 2.92396851e-01, 2.46394066e-04, 1.05465785e-01],
 #                   [2.92396851e-01, 1.44238149e+01, 4.95674770e-02, -1.75754718e+00],
 #                   [2.46394066e-04, 4.95674770e-02, 5.51668545e-02, 2.07264980e-01],
 #                   [1.05465785e-01, -1.75754718e+00, 2.07264980e-01, 1.57786340e+01]])
-
+#
 # sigma = [[0.0322203, 0.0194771],
 #          [0.0194771, 3.8548159]]
+#
+#
+sigma = np.array([[1.81394325e-01, -5.80157882e-04, 1.30766038e-01, -1.64303794e-02,
+                   -6.26605536e-03, -2.60816538e-02, -2.65245856e-02, 8.37288402e-06,
+                   -1.34630849e-01, 1.02139493e-02, 3.14004149e-02, 2.29755094e-02],
+                  [-5.80157882e-04, 2.15400039e-03, -1.68306824e-03, 2.71815458e-03,
+                   4.20401479e-04, -2.78040546e-04, -1.36702638e-04, -1.16004163e-08,
+                   1.91853582e-03, -8.42843245e-04, -1.09890912e-03, -2.79179570e-03],
+                  [1.30766038e-01, -1.68306824e-03, 2.27442409e-01, 1.58248495e-03,
+                   -3.01962404e-03, -2.22971118e-02, 6.01195487e-03, 2.70301593e-06,
+                   -1.35577657e-01, 2.44200027e-02, 1.27094320e-02, 4.75666823e-02],
+                  [-1.64303794e-02, 2.71815458e-03, 1.58248495e-03, 1.45371324e-01,
+                   6.39877361e-03, 1.29483843e-02, 2.12866658e-02, -1.89630555e-06,
+                   2.02699679e-02, 2.33181842e-02, 6.55835032e-03, -1.38957088e-02],
+                  [-6.26605536e-03, 4.20401479e-04, -3.01962404e-03, 6.39877361e-03,
+                   2.66722371e-02, 1.33016705e-02, 1.14185189e-02, -8.27503437e-07,
+                   -2.55609076e-03, 2.21617390e-02, -3.50034455e-03, -9.32089590e-04],
+                  [-2.60816538e-02, -2.78040546e-04, -2.22971118e-02, 1.29483843e-02,
+                   1.33016705e-02, 2.75334961e-01, 1.71640169e-01, -4.34797550e-06,
+                   -3.21135205e-04, 5.50358278e-02, -1.67370803e-02, -2.10103462e-02],
+                  [-2.65245856e-02, -1.36702638e-04, 6.01195487e-03, 2.12866658e-02,
+                   1.14185189e-02, 1.71640169e-01, 1.88606897e-01, -7.35735322e-06,
+                   -2.10704376e-02, 3.55236581e-02, -2.13388953e-02, -6.44806344e-03],
+                  [8.37288402e-06, -1.16004163e-08, 2.70301593e-06, -1.89630555e-06,
+                   -8.27503437e-07, -4.34797550e-06, -7.35735322e-06, 8.49990939e-09,
+                   -5.63006753e-06, 2.17821113e-06, 4.96260951e-06, -1.25886170e-06],
+                  [-1.34630849e-01, 1.91853582e-03, -1.35577657e-01, 2.02699679e-02,
+                   -2.55609076e-03, -3.21135205e-04, -2.10704376e-02, -5.63006753e-06,
+                   2.34138446e-01, -4.37360972e-02, 3.39491727e-03, -4.13361145e-03],
+                  [1.02139493e-02, -8.42843245e-04, 2.44200027e-02, 2.33181842e-02,
+                   2.21617390e-02, 5.50358278e-02, 3.55236581e-02, 2.17821113e-06,
+                   -4.37360972e-02, 2.14433967e-01, 6.32376986e-03, 1.21498681e-02],
+                  [3.14004149e-02, -1.09890912e-03, 1.27094320e-02, 6.55835032e-03,
+                   -3.50034455e-03, -1.67370803e-02, -2.13388953e-02, 4.96260951e-06,
+                   3.39491727e-03, 6.32376986e-03, 9.00001321e-02, 5.84061237e-02],
+                  [2.29755094e-02, -2.79179570e-03, 4.75666823e-02, -1.38957088e-02,
+                   -9.32089590e-04, -2.10103462e-02, -6.44806344e-03, -1.25886170e-06,
+                   -4.13361145e-03, 1.21498681e-02, 5.84061237e-02, 3.73502102e-01]])
 
-
-sigma = np.array([[6.48119152e-04, 1.97261524e-05, 3.28995716e-05, 1.75467328e-04,
-                   5.53304683e-06, -3.72432718e-04, -4.21233922e-04, 4.06141951e-05,
-                   1.14670648e-04, 1.89826881e-05, 3.52954365e-04, 2.22300834e-04],
-                  [1.97261524e-05, 8.16157072e-06, -1.54762417e-06, 1.27332809e-05,
-                   5.07504989e-07, -7.58816603e-07, -2.77414572e-05, 3.46213656e-06,
-                   1.20344595e-05, 1.45252595e-06, 3.26173134e-05, 6.50215187e-06],
-                  [3.28995716e-05, -1.54762417e-06, 6.11577717e-06, 1.31000627e-05,
-                   1.91241843e-07, -3.35425225e-05, -1.47965279e-05, 7.34329848e-07,
-                   5.90729211e-07, 1.09060628e-06, 6.54676389e-06, 8.76059867e-06],
-                  [1.75467328e-04, 1.27332809e-05, 1.31000627e-05, 2.44634013e-04,
-                   3.81217214e-06, -1.56352584e-04, -2.47345607e-04, 1.50084065e-05,
-                   4.84157381e-05, 1.03766198e-05, 2.20036688e-04, 7.65131728e-05],
-                  [5.53304683e-06, 5.07504989e-07, 1.91241843e-07, 3.81217214e-06,
-                   2.33206129e-07, -3.28466371e-06, -7.83399152e-06, 7.00015419e-07,
-                   2.33877308e-06, 6.89912373e-07, 7.51433018e-06, 3.87134436e-06],
-                  [-3.72432718e-04, -7.58816603e-07, -3.35425225e-05, -1.56352584e-04,
-                   -3.28466371e-06, 1.91523995e-03, -4.10475438e-04, -7.68195651e-06,
-                   -1.02589085e-05, -4.11535493e-06, -1.15427325e-04, -6.03481937e-05],
-                  [-4.21233922e-04, -2.77414572e-05, -1.47965279e-05, -2.47345607e-04,
-                   -7.83399152e-06, -4.10475438e-04, 8.97538715e-04, -5.38355036e-05,
-                   -1.79734479e-04, -3.28509088e-05, -5.90570324e-04, -3.38682201e-04],
-                  [4.06141951e-05, 3.46213656e-06, 7.34329848e-07, 1.50084065e-05,
-                   7.00015419e-07, -7.68195651e-06, -5.38355036e-05, 5.94088578e-06,
-                   2.01009921e-05, 3.41455695e-06, 5.53657959e-05, 2.72525962e-05],
-                  [1.14670648e-04, 1.20344595e-05, 5.90729211e-07, 4.84157381e-05,
-                   2.33877308e-06, -1.02589085e-05, -1.79734479e-04, 2.01009921e-05,
-                   7.18571328e-05, 1.15095333e-05, 1.92999232e-04, 9.17542248e-05],
-                  [1.89826881e-05, 1.45252595e-06, 1.09060628e-06, 1.03766198e-05,
-                   6.89912373e-07, -4.11535493e-06, -3.28509088e-05, 3.41455695e-06,
-                   1.15095333e-05, 5.93219807e-06, 3.55081410e-05, 2.34873171e-05],
-                  [3.52954365e-04, 3.26173134e-05, 6.54676389e-06, 2.20036688e-04,
-                   7.51433018e-06, -1.15427325e-04, -5.90570324e-04, 5.53657959e-05,
-                   1.92999232e-04, 3.55081410e-05, 6.68918465e-04, 3.09595531e-04],
-                  [2.22300834e-04, 6.50215187e-06, 8.76059867e-06, 7.65131728e-05,
-                   3.87134436e-06, -6.03481937e-05, -3.38682201e-04, 2.72525962e-05,
-                   9.17542248e-05, 2.34873171e-05, 3.09595531e-04, 4.08194717e-04]])
-
+improved_imputed_values = []
 imputed_values = []
 restored_data = []
 median_impute = []
@@ -137,24 +129,33 @@ for test_data in damaged_data:
     missing_dim = [idx for idx, value in enumerate(test_data) if np.isnan(value)]
 
     imputed_value = nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)
+    improved_imputed_value = improved_nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)
 
     restored_element = np.insert(test_data, missing_dim, imputed_value)
     restored_data.append(restored_element)
     median_impute.append(medians[missing_dim])
 
     imputed_values.append(imputed_value)
+    improved_imputed_values.append(improved_imputed_value)
 
 median_impute = np.array(median_impute)
 restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
+improved_imputed_values = np.array(improved_imputed_values)
 
-divergence = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) / removed_values]) * 100
-divergence_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) / removed_values]) * 100
+divergence = np.abs(np.array([np.mean(diff) for diff in (removed_values - imputed_values) / removed_values]) * 100)
+improved_divergence = np.abs(
+    np.array([np.mean(diff) for diff in (removed_values - improved_imputed_values) / removed_values]) * 100)
+divergence_median = np.abs(np.array(
+    [np.mean(diff) for diff in (removed_values - median_impute) / removed_values]) * 100)
+
 mse = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values) ** 2])
+improved_mse = np.array([np.mean(diff) for diff in np.abs(removed_values - improved_imputed_values) ** 2])
 mse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) ** 2])
 
 plt.figure(2)
 plt.plot(np.arange(len(divergence)), divergence, '-b', label='Error')
+plt.plot(np.arange(len(improved_divergence)), improved_divergence, '-g', label='Improved Error')
 plt.plot(np.arange(len(divergence_median)), divergence_median, '-r', label='Error median')
 leg = plt.legend()
 plt.xlabel('Index')
@@ -163,7 +164,8 @@ plt.show()
 
 plt.figure(3)
 plt.plot(np.arange(len(mse)), mse, '-b', label='MSE')
-plt.plot(np.arange(len(mse)), mse_median, '-r', label='MSE median')
+plt.plot(np.arange(len(improved_mse)), improved_mse, '-g', label='Improved MSE')
+plt.plot(np.arange(len(mse_median)), mse_median, '-r', label='MSE median')
 plt.legend()
 plt.xlabel('Index')
 plt.ylabel('Imputation error MSE')

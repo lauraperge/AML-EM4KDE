@@ -31,7 +31,7 @@ def m_step(x_test, x_train, responsibility):
             # _sigmas[n] = (responsibility[k, n] * delta.T).dot(delta)
 
             # Use this line to reproduce D-Kernel
-            _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test-train)**2)
+            _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test - train) ** 2)
 
             # Use this line to reproduce S-Kernel
             # _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
@@ -174,7 +174,7 @@ def nadaraya_watson_imputation(damaged_data, train_data, sigma):
     probabilities = np.array(
         [np.array(multivariate_normal.pdf(x=damaged_data, mean=train, cov=existing_dim_sigma)) for train in
          train_existing])
-    prob_sum = probabilities.sum()
+    prob_sum = probabilities.sum() if probabilities.sum() != 0 else 1
     imputed_values = np.sum(train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
 
     return imputed_values
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     b = np.array([8, 7])
     #
     # print(np.linalg.norm(a-b, ord=2, keepdims=True))
-    print(np.eye(2)*(a-b)**2)
+    print(np.eye(2) * (a - b) ** 2)
 
     delta = (a - b)[np.newaxis]
     print((delta.T).dot(delta))
