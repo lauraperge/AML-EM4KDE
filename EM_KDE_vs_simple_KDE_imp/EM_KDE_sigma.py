@@ -11,12 +11,12 @@ def em_kde(data_source):
     # Load data
     # Taking only small part due to memory limitations
     if data_source == 'wine':
-        raw_data = preprocessing.scale(loadmat('../faithfull/wine.mat')['X'][:1000])
+        raw_data = (loadmat('../faithfull/wine.mat')['X'][:1000])
         # Also remove the first 100 what we damage later on purpose
         NUM_TEST = 100
         data = np.array(raw_data[:-NUM_TEST])
     else:
-        data = preprocessing.scale(loadmat('../faithfull/faithful.mat')['X'])
+        data = loadmat('../faithfull/faithful.mat')['X']
 
     num_data, dim = data.shape
 
@@ -81,7 +81,7 @@ def em_kde(data_source):
 
 
 if __name__ == '__main__':
-    data_source = 'faithful'
-    # data_source = 'wine'
+    # data_source = 'faithful'
+    data_source = 'wine'
 
     em_kde(data_source)

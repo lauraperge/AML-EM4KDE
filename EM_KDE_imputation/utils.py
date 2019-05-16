@@ -115,7 +115,6 @@ def remove_random_value(data_array):
 
     def remove_random(item):
         size = round(random.random() * (dim - 2)) + 1
-        # size = 4
         idx = np.sort(np.unique(np.random.choice(range(dim), size=size, replace=False)))
         removed_dims = []
         for i in idx:
@@ -137,7 +136,7 @@ def conditional_expectation(test, mean, sigma, existing_dim, missing_dim):
     m1 = mean[missing_dim]
     m2 = mean[existing_dim]
 
-    return np.squeeze(m1 + S12.dot(S22_inv.dot(test - m2)))
+    return m1 + S12.dot(S22_inv.dot(test - m2))
 
 
 def nadaraya_watson_imputation(damaged_data, train_data, sigma):

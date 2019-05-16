@@ -10,7 +10,7 @@ from EM_KDE_imputation.plot import plot_kde
 ## Load data
 raw_data = loadmat('../faithfull/wine.mat')['X']
 
-NUM_TEST = 20
+NUM_TEST = 100
 
 raw_data = preprocessing.scale(raw_data[:(1000 + NUM_TEST)])  # taking only a small part for testing
 data = np.array(raw_data[:-NUM_TEST])
@@ -132,14 +132,14 @@ for test_data in damaged_data:
     improved_imputed_value = improved_nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)
 
     restored_element = np.insert(test_data, missing_dim, imputed_value)
-    restored_data.append(restored_element)
+    # restored_data.append(restored_element)
     median_impute.append(medians[missing_dim])
 
     imputed_values.append(imputed_value)
     improved_imputed_values.append(improved_imputed_value)
 
 median_impute = np.array(median_impute)
-restored_data = np.array(restored_data)
+# restored_data = np.array(restored_data)
 imputed_values = np.array(imputed_values)
 improved_imputed_values = np.array(improved_imputed_values)
 
@@ -174,3 +174,7 @@ plt.show()
 print(f'Median imputation error: {round(divergence_median.mean())}%')
 print(f'Nadaraya-Watson imputation error: {round(divergence.mean())}%')
 print(f'Improved Nadaraya-Watson imputation error: {round(improved_divergence.mean())}%')
+
+print(f'Median imputation error (MSE): {round(mse_median.mean(), 2)}')
+print(f'Nadaraya-Watson imputation error (MSE): {round(mse.mean(), 2)}')
+print(f'Improved Nadaraya-Watson imputation error (MSE): {round(improved_mse.mean(), 2)}')

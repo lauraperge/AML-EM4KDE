@@ -31,10 +31,10 @@ def m_step(x_test, x_train, responsibility):
             # _sigmas[n] = (responsibility[k, n] * delta.T).dot(delta)
 
             # Use this line to reproduce D-Kernel
-            _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test - train) ** 2)
+            # _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test - train) ** 2)
 
             # Use this line to reproduce S-Kernel
-            # _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
+            _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
 
         sigmas[k] = _sigmas.mean(axis=0)
 
@@ -147,14 +147,14 @@ def remove_dim(sigma, dim):
     return reduced_sigma
 
 
-def conditional_expectation(mean, test, sigma, dim):
-    S22_inv = 1 / sigma[dim][dim]
-    S12 = np.delete(sigma[dim], dim, axis=0)[np.newaxis].T
+def conditional_expectation(test, mean, sigma, existing_dim, missing_dim):
+    S22_inv = np.linalg.inv(sigma[np.ix_(existing_dim, existing_dim)])
+    S12 = sigma[np.ix_(missing_dim, existing_dim)]
 
-    m1 = mean[dim]
-    m2 = np.delete(mean, dim, axis=0)
+    m1 = mean[missing_dim]
+    m2 = mean[existing_dim]
 
-    return np.squeeze(m1 + S12.dot(S22_inv * (test - m2)))
+    return m1 + S12.dot(S22_inv.dot(test - m2))
 
 
 def nadaraya_watson_imputation(damaged_data, train_data, sigma):
@@ -171,11 +171,46 @@ def nadaraya_watson_imputation(damaged_data, train_data, sigma):
     train_existing = np.delete(train_data, missing_dim, axis=1)
     train_missing = np.delete(train_data, existing_dim, axis=1)
 
-    probabilities = np.array(
-        [np.array(multivariate_normal.pdf(x=damaged_data, mean=train, cov=existing_dim_sigma)) for train in
-         train_existing])
-    prob_sum = probabilities.sum() if probabilities.sum() != 0 else 1
-    imputed_values = np.sum(train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
+    # imputed_values = np.sum(train_missing * probabilities[:, np.newaxis], axis=0) / prob_sum
+
+    # create transformed data
+    R = np.linalg.cholesky(existing_dim_sigma)
+    R_inv_T = np.linalg.inv(R).T
+    a_train = train_existing.dot(R_inv_T)
+    a_test = damaged_data.dot(R_inv_T)
+
+    responsibility = np.squeeze(e_step(np.array([a_test]), a_train, R))
+
+    imputed_values = np.sum((train_missing * responsibility[:, np.newaxis]), axis=0)
+
+    return imputed_values
+
+
+def improved_nadaraya_watson_imputation(damaged_data, train_data, sigma):
+    # get indexes of the missing and existing dimensions of the test data
+    missing_dim = np.array([idx for idx, value in enumerate(damaged_data) if np.isnan(value)])
+    existing_dim = np.array([idx for idx, value in enumerate(damaged_data) if not np.isnan(value)])
+
+    # Remove the placeholder 'nan' values from the damaged data
+    damaged_data = damaged_data[np.ix_(existing_dim)]
+
+    # create sigma values for the missing and existing dimensions
+    existing_dim_sigma = sigma[np.ix_(existing_dim, existing_dim)]
+
+    train_existing = np.delete(train_data, missing_dim, axis=1)
+
+    # create transformed data
+    R = np.linalg.cholesky(existing_dim_sigma)
+    R_inv_T = np.linalg.inv(R).T
+    a_train = train_existing.dot(R_inv_T)
+    a_test = damaged_data.dot(R_inv_T)
+
+    responsibility = np.squeeze(e_step(np.array([a_test]), a_train, R))
+
+    cond_exp = np.array(
+        [conditional_expectation(damaged_data, mean, sigma, existing_dim, missing_dim) for mean in train_data])
+
+    imputed_values = np.sum((cond_exp * responsibility[:, np.newaxis]), axis=0)
 
     return imputed_values
 
