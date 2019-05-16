@@ -6,14 +6,15 @@ from EM_KDE_vs_simple_KDE_imp.utils import e_step, m_step, calculate_log_likelih
 from EM_KDE_vs_simple_KDE_imp.plot import plot_kde
 
 
-# @profile
 def em_kde(data_source):
     # Load data
     # Taking only small part due to memory limitations
     if data_source == 'wine':
-        raw_data = (loadmat('../faithfull/wine.mat')['X'][:1000])
+        raw_data = loadmat('../faithfull/wine.mat')['X']
         # Also remove the first 100 what we damage later on purpose
         NUM_TEST = 100
+
+        raw_data = preprocessing.scale(raw_data[:(1000 + NUM_TEST)])  # taking only a small part for testing
         data = np.array(raw_data[:-NUM_TEST])
     else:
         data = loadmat('../faithfull/faithful.mat')['X']

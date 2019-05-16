@@ -27,14 +27,14 @@ def m_step(x_test, x_train, responsibility):
         _sigmas = np.zeros([num_test, dim, dim])
         for n, test in enumerate(x_test):
             # Use these two lines to reproduce F-kernel
-            # delta = (test - train)[np.newaxis]
+            delta = (test - train)[np.newaxis]
             # _sigmas[n] = (responsibility[k, n] * delta.T).dot(delta)
 
             # Use this line to reproduce D-Kernel
-            # _sigmas[n] = np.eye(dim) * (responsibility[k, n] * (test - train) ** 2)
+            # _sigmas[n] = np.eye(dim) * (responsibility[k, n] * delta ** 2)
 
             # Use this line to reproduce S-Kernel
-            _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.linalg.norm(test-train)
+            _sigmas[n] = np.eye(dim) * responsibility[k, n] * np.mean(delta ** 2)
 
         sigmas[k] = _sigmas.mean(axis=0)
 
