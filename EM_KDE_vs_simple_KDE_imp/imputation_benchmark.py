@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn import preprocessing
 from scipy.io import loadmat
-from EM_KDE_vs_simple_KDE_imp.utils import remove_random_value, nadaraya_watson_imputation
+from EM_KDE_vs_simple_KDE_imp.utils import remove_random_value, nadaraya_watson_imputation, \
+    improved_nadaraya_watson_imputation
 from EM_KDE_vs_simple_KDE_imp.knn_imputation import knn_impute, find_null
 import matplotlib.pyplot as plt
 
@@ -138,7 +139,8 @@ for benchmark_case in benchmarks:
     _cond_exp_imputed_values = []
     for test_data in damaged_data:
         imputed_value = nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)
-        cond_exp_imputed_value = improved_nadaraya_watson_imputation(damaged_data=test_data, train_data=data, sigma=sigma)
+        cond_exp_imputed_value = improved_nadaraya_watson_imputation(damaged_data=test_data, train_data=data,
+                                                                     sigma=sigma)
         _imputed_values.append(imputed_value)
         _cond_exp_imputed_values.append(cond_exp_imputed_value)
 
@@ -206,7 +208,6 @@ cond_exp_rmse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - co
 cond_exp_rmse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - cond_exp_imputed_values[2])])
 cond_exp_rmse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute)])
 
-
 plt.figure(3)
 plt.plot(np.arange(len(mse_S)), mse_S, '-y', label='MSE (S-Kernel)')
 plt.plot(np.arange(len(mse_D)), mse_D, '-r', label='MSE (D-Kernel)')
@@ -225,7 +226,6 @@ plt.xlabel('Index of damaged observation')
 plt.ylabel('Imputation RMSE')
 plt.show()
 
-
 # boxplot_data = [mse_F, mse_D, mse_S, mse_median, best_neighbor_mse]
 # plt.figure(5)
 # plt.title('Imputation MSE')
@@ -241,11 +241,16 @@ plt.show()
 boxplot_data = [mse_F, mse_D, mse_S, cond_exp_mse_F, cond_exp_mse_D, cond_exp_mse_S, mse_median, best_neighbor_mse]
 plt.figure(5)
 plt.title('Imputation MSE')
-plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'F-kernel', 'D-kernel', 'S-kernel', 'Median', 'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
+plt.boxplot(boxplot_data, showfliers=False,
+            labels=['F-kernel', 'D-kernel', 'S-kernel', 'F-kernel', 'D-kernel', 'S-kernel', 'Median',
+                    'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
 plt.show()
 
-boxplot_data = [rmse_F, rmse_D, rmse_S, cond_exp_rmse_F, cond_exp_rmse_D, cond_exp_rmse_S, rmse_median, best_neighbor_rmse]
+boxplot_data = [rmse_F, rmse_D, rmse_S, cond_exp_rmse_F, cond_exp_rmse_D, cond_exp_rmse_S, rmse_median,
+                best_neighbor_rmse]
 plt.figure(6)
 plt.title('Imputation RMSE')
-plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'F-kernel', 'D-kernel', 'S-kernel', 'Median', 'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
+plt.boxplot(boxplot_data, showfliers=False,
+            labels=['F-kernel', 'D-kernel', 'S-kernel', 'F-kernel', 'D-kernel', 'S-kernel', 'Median',
+                    'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
 plt.show()
