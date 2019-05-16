@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial import KDTree
 
+
 def find_null(data):
     """ Finds the indices of all missing values.
       Parameters
@@ -62,22 +63,32 @@ def knn_impute(data, k=3):
       numpy.ndarray
           Imputed data.
     """
-    imputed_data = np.copy(data)
-    nulls = find_null(imputed_data)
-    data_corrected = fill_mean(imputed_data)
-    # Use all the default parameters, calculate based on Euclidean distance
-    kdTree = KDTree(data_corrected)
 
-    for datapoint_i, missing_dim_i in nulls:
-        distances, indices = kdTree.query(data_corrected[datapoint_i], k=k + 1)
-        # Will always return itself in the first index. Delete it.
-        distances, indices = distances[1:], indices[1:]
-        if np.sum(distances) != 0:
-            weights = distances / np.sum(distances)
-        else:
-            weights = distances
-        # Assign the weighted average of `k` nearest neighbors
-        imputed_data[datapoint_i][missing_dim_i] = np.dot(weights,
-                                                          [data_corrected[ind][missing_dim_i] for ind in indices])
+    def get_kd_tree():
+        imputed_data = np.copy(data)
+        nulls = find_null(imputed_data)
+        data_corrected = fill_mean(imputed_data)
+        # Use all the default parameters, calculate based on Euclidean distance
+        kdTree = KDTree(data_corrected)
+
+        return [imputed_data, nulls, data_corrected, kdTree]
+
+    [imputed_data, nulls, data_corrected, kdTree] = get_kd_tree()
+
+    def get_immputation(imputed_data, nulls, data_corrected, kdTree):
+        for datapoint_i, missing_dim_i in nulls:
+            distances, indices = kdTree.query(data_corrected[datapoint_i], k=k + 1)
+            # Will always return itself in the first index. Delete it.
+            distances, indices = distances[1:], indices[1:]
+            if np.sum(distances) != 0:
+                weights = distances / np.sum(distances)
+            else:
+                weights = distances
+            # Assign the weighted average of `k` nearest neighbors
+            imputed_data[datapoint_i][missing_dim_i] = np.dot(weights,
+                                                              [data_corrected[ind][missing_dim_i] for ind in indices])
+        return imputed_data
+
+    imputed_data = get_immputation(imputed_data, nulls, data_corrected, kdTree)
 
     return imputed_data

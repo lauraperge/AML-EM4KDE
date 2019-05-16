@@ -5,6 +5,7 @@ from EM_KDE_vs_simple_KDE_imp.utils import remove_random_value, nadaraya_watson_
     improved_nadaraya_watson_imputation
 from EM_KDE_vs_simple_KDE_imp.knn_imputation import knn_impute, find_null
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
 # Sigma for F-Kernel
 sigma_F = np.array([[1.90367147e-01, -5.54762511e-04, 1.34608492e-01, -1.44144445e-02,
@@ -167,17 +168,20 @@ best_neighbor_avg_mse = 100
 best_neighbor_number = 0
 best_neighbor_mse = []
 best_neighbor_rmse = []
+best_neighbor_perc = []
 for neighbor in neighbors:
     imputed_data = knn_impute(damaged_data_set, k=neighbor)
     imputed_values_knn = np.array([imputed_data.item(tuple(x)) for x in find_null(damaged_data)])
     mse_knn = np.array(np.abs(flattened_removed_values - imputed_values_knn) ** 2)
     rmse_knn = np.array(np.abs(flattened_removed_values - imputed_values_knn))
+    perc_knn = np.array(np.abs((flattened_removed_values - imputed_values_knn) / flattened_removed_values))
     avg_mse.append(np.average(mse_knn))
     if np.average(mse_knn) < best_neighbor_avg_mse:
         best_neighbor_avg_mse = np.average(mse_knn)
         best_neighbor_mse = mse_knn
         best_neighbor_rmse = rmse_knn
         best_neighbor_number = neighbor
+        best_neighbor_perc = perc_knn
 
 print('The best number of neighbor to use is {0}'.format(best_neighbor_number))
 
@@ -193,20 +197,37 @@ mse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_valu
 mse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[2]) ** 2])
 mse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) ** 2])
 
-rmse_F = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[0])])
-rmse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[1])])
-rmse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - imputed_values[2])])
-rmse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute)])
+rmse_F = np.array([np.mean(diff) for diff in np.abs((removed_values - imputed_values[0]))])
+rmse_D = np.array([np.mean(diff) for diff in np.abs((removed_values - imputed_values[1]))])
+rmse_S = np.array([np.mean(diff) for diff in np.abs((removed_values - imputed_values[2]))])
+rmse_median = np.array([np.mean(diff) for diff in np.abs((removed_values - median_impute))])
+
+perc_F = np.array([np.mean(diff) for diff in np.abs((removed_values - imputed_values[0]) / removed_values)])
+perc_D = np.array([np.mean(diff) for diff in np.abs((removed_values - imputed_values[1]) / removed_values)])
+perc_S = np.array([np.mean(diff) for diff in np.abs((removed_values - imputed_values[2]) / removed_values)])
+perc_median = np.array([np.mean(diff) for diff in np.abs((removed_values - median_impute) / removed_values)])
 
 cond_exp_mse_F = np.array([np.mean(diff) for diff in np.abs(removed_values - cond_exp_imputed_values[0]) ** 2])
 cond_exp_mse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - cond_exp_imputed_values[1]) ** 2])
 cond_exp_mse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - cond_exp_imputed_values[2]) ** 2])
 cond_exp_mse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute) ** 2])
 
-cond_exp_rmse_F = np.array([np.mean(diff) for diff in np.abs(removed_values - cond_exp_imputed_values[0])])
-cond_exp_rmse_D = np.array([np.mean(diff) for diff in np.abs(removed_values - cond_exp_imputed_values[1])])
-cond_exp_rmse_S = np.array([np.mean(diff) for diff in np.abs(removed_values - cond_exp_imputed_values[2])])
-cond_exp_rmse_median = np.array([np.mean(diff) for diff in np.abs(removed_values - median_impute)])
+cond_exp_perc_F = np.array(
+    [np.mean(diff) for diff in np.abs((removed_values - cond_exp_imputed_values[0]) / removed_values)])
+cond_exp_perc_D = np.array(
+    [np.mean(diff) for diff in np.abs((removed_values - cond_exp_imputed_values[1]) / removed_values)])
+cond_exp_perc_S = np.array(
+    [np.mean(diff) for diff in np.abs((removed_values - cond_exp_imputed_values[2]) / removed_values)])
+cond_exp_perc_median = np.array(
+    [np.mean(diff) for diff in np.abs((removed_values - median_impute) / removed_values)])
+
+cond_exp_rmse_F = np.array(
+    [np.mean(diff) for diff in np.abs((removed_values - cond_exp_imputed_values[0]))])
+cond_exp_rmse_D = np.array(
+    [np.mean(diff) for diff in np.abs((removed_values - cond_exp_imputed_values[1]))])
+cond_exp_rmse_S = np.array(
+    [np.mean(diff) for diff in np.abs((removed_values - cond_exp_imputed_values[2]))])
+cond_exp_rmse_median = np.array([np.mean(diff) for diff in np.abs((removed_values - median_impute))])
 
 plt.figure(3)
 plt.plot(np.arange(len(mse_S)), mse_S, '-y', label='MSE (S-Kernel)')
@@ -226,31 +247,44 @@ plt.xlabel('Index of damaged observation')
 plt.ylabel('Imputation RMSE')
 plt.show()
 
-# boxplot_data = [mse_F, mse_D, mse_S, mse_median, best_neighbor_mse]
-# plt.figure(5)
-# plt.title('Imputation MSE')
-# plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median', 'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
-# plt.show()
-#
-# boxplot_data = [rmse_F, rmse_D, rmse_S, rmse_median, best_neighbor_rmse]
-# plt.figure(6)
-# plt.title('Imputation RMSE')
-# plt.boxplot(boxplot_data, showfliers=False, labels=['F-kernel', 'D-kernel', 'S-kernel', 'Median', 'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
-# plt.show()
-
-boxplot_data = [mse_F, mse_D, mse_S, cond_exp_mse_F, cond_exp_mse_D, cond_exp_mse_S, mse_median, best_neighbor_mse]
+boxplot_data = [mse_F, cond_exp_mse_F, mse_D, cond_exp_mse_D, mse_S, cond_exp_mse_S, mse_median, best_neighbor_mse]
 plt.figure(5)
 plt.title('Imputation MSE')
 plt.boxplot(boxplot_data, showfliers=False,
-            labels=['F-kernel', 'D-kernel', 'S-kernel', 'F-kernel', 'D-kernel', 'S-kernel', 'Median',
-                    'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
+            labels=['N-W F-kernel', 'C-E F-kernel', 'N-W D-kernel', 'C-E D-kernel', 'N-W S-kernel', 'C-S S-kernel',
+                    'Median',
+                    f'KNN {best_neighbor_number}'], patch_artist=True)
+plt.xticks(rotation=90)
 plt.show()
 
-boxplot_data = [rmse_F, rmse_D, rmse_S, cond_exp_rmse_F, cond_exp_rmse_D, cond_exp_rmse_S, rmse_median,
+boxplot_data = [rmse_F, cond_exp_rmse_F, rmse_D, cond_exp_rmse_D, rmse_S, cond_exp_rmse_S, rmse_median,
                 best_neighbor_rmse]
 plt.figure(6)
 plt.title('Imputation RMSE')
 plt.boxplot(boxplot_data, showfliers=False,
-            labels=['F-kernel', 'D-kernel', 'S-kernel', 'F-kernel', 'D-kernel', 'S-kernel', 'Median',
-                    'KNN ({0})'.format(best_neighbor_number)], patch_artist=True)
+            labels=['N-W F-kernel', 'C-E F-kernel', 'N-W D-kernel', 'C-E D-kernel', 'N-W S-kernel', 'C-S S-kernel',
+                    'Median',
+                    f'KNN {best_neighbor_number}'], patch_artist=True)
+plt.xticks(rotation=90)
 plt.show()
+
+plt.figure(7)
+boxplot_data = [perc_F, cond_exp_perc_F, perc_D, cond_exp_perc_D, perc_S, cond_exp_perc_S, perc_median,
+                best_neighbor_perc]
+plt.title('Imputation error relative to the original value')
+plt.boxplot(boxplot_data, showfliers=False,
+            labels=['N-W F-kernel', 'C-E F-kernel', 'N-W D-kernel', 'C-E D-kernel', 'N-W S-kernel', 'C-S S-kernel',
+                    'Median',
+                    f'KNN {best_neighbor_number}'], patch_artist=True)
+plt.xticks(rotation=90)
+plt.gca().set_yticklabels([f'{x * 100}%' for x in plt.gca().get_yticks()])
+plt.show()
+
+print([round(rmse_F.mean(), 3), round(rmse_D.mean(), 3), round(rmse_S.mean(), 3), round(cond_exp_rmse_F.mean(), 3),
+       round(cond_exp_rmse_D.mean(), 3), round(cond_exp_rmse_S.mean(), 3), round(rmse_median.mean(), 3),
+       round(best_neighbor_rmse.mean(), 3)])
+
+
+print([round(perc_F.mean(), 3), round(perc_D.mean(), 3), round(perc_S.mean(), 3), round(cond_exp_perc_F.mean(), 3),
+       round(cond_exp_perc_D.mean(), 3), round(cond_exp_perc_S.mean(), 3), round(perc_median.mean(), 3),
+       round(best_neighbor_perc.mean(), 3)])
