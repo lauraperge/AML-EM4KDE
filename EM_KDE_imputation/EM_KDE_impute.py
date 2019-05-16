@@ -171,9 +171,9 @@ plt.xlabel('Index')
 plt.ylabel('Imputation error MSE')
 plt.show()
 
-print(f'Median imputation error: {round(divergence_median.mean())}%')
-print(f'Nadaraya-Watson imputation error: {round(divergence.mean())}%')
-print(f'Improved Nadaraya-Watson imputation error: {round(improved_divergence.mean())}%')
+print(f'Median imputation error: {round(mse_median.mean(), 2)}')
+print(f'Nadaraya-Watson imputation error: {round(mse.mean(), 2)}')
+print(f'Improved Nadaraya-Watson imputation error: {round(improved_mse.mean(), 2)}')
 
 print(f'Median imputation error (MSE): {round(mse_median.mean(), 2)}')
 print(f'Nadaraya-Watson imputation error (MSE): {round(mse.mean(), 2)}')
